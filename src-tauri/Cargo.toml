@@ -1,6 +1,10 @@
 [package]
 name = "seex"
-version = "0.3.9"
+version = "1.0.0"
+description = "Clipboard event tracker and GUI bridge for exporting LCSC component libraries through nlbn and npnp."
+license = "CC-BY-NC-4.0"
+repository = "https://github.com/linkyourbin/seex"
+homepage = "https://github.com/linkyourbin/seex"
 authors = ["linkyourbin"]
 edition = "2024"
 
@@ -21,6 +25,6 @@ arboard = "3.6.1"
 clipboard-master = "4.0.0"
 chrono = "0.4.44"
 regex = "1.12.3"
-npnp = "0.1.11"
+npnp = "1.0.0"
 tokio = { version = "1.50.0", features = ["rt", "sync"] }
 nlbn = "1.0.27"
