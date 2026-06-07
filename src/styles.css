@@ -779,46 +779,12 @@ button:disabled {
   color: var(--text-2);
 }
 
-.about-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.about-panel,
 .update-card,
 .tech-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-sm);
-}
-
-.about-panel {
-  min-height: 120px;
-  padding: 14px;
-}
-
-.about-panel-index {
-  display: block;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-
-.about-panel strong {
-  display: block;
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.25;
-}
-
-.about-panel p {
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 1.55;
-  margin-top: 8px;
 }
 
 .about-lower {
@@ -965,7 +931,6 @@ button:disabled {
 
 @media (max-width: 760px) {
   .about-hero,
-  .about-grid,
   .about-lower {
     grid-template-columns: 1fr;
   }
