@@ -1,6 +1,6 @@
 [package]
 name = "seex"
-version = "1.0.3"
+version = "1.0.4"
 description = "Clipboard event tracker and GUI bridge for exporting LCSC component libraries through nlbn and npnp."
 license = "CC-BY-NC-4.0"
 repository = "https://github.com/linkyourbin/seex"
