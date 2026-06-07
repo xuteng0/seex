@@ -2568,9 +2568,9 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nlbn"
-version = "1.0.28"
+version = "1.0.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71d7cbb8786e37617308e0e3b99edb4392f0659f5c174bed7363897f1b4fea91"
+checksum = "f11d42a4c3e885b1620245c32aa48457f0eff69d9d1b1929c0fd1a792b483e31"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3912,7 +3912,7 @@ dependencies = [
 
 [[package]]
 name = "seex"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "arboard",
  "chrono",

@@ -1,4 +1,5 @@
 use nlbn::checkpoint::{append_checkpoint, load_checkpoint};
+use nlbn::model_converter::ModelStageStatus;
 use nlbn::{Cli, EasyedaApi, LibraryManager};
 use serde::Serialize;
 use std::path::PathBuf;
@@ -142,6 +143,7 @@ async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<Strin
     );
 
     let api = Arc::new(EasyedaApi::new());
+    let model_stage_status = Arc::new(ModelStageStatus::new());
     let success_count = Arc::new(AtomicUsize::new(0));
     let failed_count = Arc::new(AtomicUsize::new(0));
     let processed_count = Arc::new(AtomicUsize::new(0));
@@ -156,12 +158,14 @@ async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<Strin
             let args = args.clone();
             let api = api.clone();
             let lib_manager = lib_manager.clone();
+            let model_stage_status = model_stage_status.clone();
 
             join_set.spawn(async move {
                 let _permit = semaphore.acquire_owned().await.map_err(|e| e.to_string())?;
-                let result = process_component(&args, &api, &lib_manager, &id)
-                    .await
-                    .map_err(|e| e.to_string());
+                let result =
+                    process_component(&args, &api, &lib_manager, model_stage_status.as_ref(), &id)
+                        .await
+                        .map_err(|e| e.to_string());
                 Ok::<ItemOutcome, String>(ItemOutcome { id, result })
             });
         }
@@ -193,9 +197,15 @@ async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<Strin
         for id in pending_ids {
             let outcome = ItemOutcome {
                 id: id.clone(),
-                result: process_component(&args, &api, &lib_manager, &id)
-                    .await
-                    .map_err(|e| e.to_string()),
+                result: process_component(
+                    &args,
+                    &api,
+                    &lib_manager,
+                    model_stage_status.as_ref(),
+                    &id,
+                )
+                .await
+                .map_err(|e| e.to_string()),
             };
 
             register_outcome(
@@ -272,6 +282,7 @@ async fn process_component(
     args: &Cli,
     api: &EasyedaApi,
     lib_manager: &LibraryManager,
+    model_stage_status: &ModelStageStatus,
     lcsc_id: &str,
 ) -> nlbn::Result<()> {
     let component_data = api.get_component_data(lcsc_id).await?;
@@ -285,8 +296,15 @@ async fn process_component(
     }
 
     if args.model_3d || args.full {
-        nlbn::model_converter::convert_3d_model(args, api, &component_data, lib_manager, lcsc_id)
-            .await?;
+        nlbn::model_converter::convert_3d_model(
+            args,
+            api,
+            &component_data,
+            lib_manager,
+            lcsc_id,
+            model_stage_status,
+        )
+        .await?;
     }
 
     append_checkpoint(&args.output.join(".checkpoint"), lcsc_id);
