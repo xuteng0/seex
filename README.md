@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.1-E8656C" alt="version" />
+  <img src="https://img.shields.io/badge/version-1.0.3-E8656C" alt="version" />
   <img src="https://img.shields.io/badge/license-CC%20BY--NC%204.0-F4845F" alt="license" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-66BB6A" alt="platform" />
 </p>
@@ -51,6 +51,10 @@ Just install it from github release, or you can build it on your own for your ow
 ## Note
 
 `nlbn` is for `Windows`, `Macos`, `Linux`, becuase `Kicad` is built for such case. `npnp` is `Windows` only since `Altitum designer` is windows only.
+
+## Updater
+
+SeEx uses Tauri's signed updater against GitHub Releases. Release builds require the repository secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; the public key is configured in `src-tauri/tauri.conf.json`.
 
 ## License
 

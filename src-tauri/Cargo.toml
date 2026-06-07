@@ -1,6 +1,6 @@
 [package]
 name = "seex"
-version = "1.0.2"
+version = "1.0.3"
 description = "Clipboard event tracker and GUI bridge for exporting LCSC component libraries through nlbn and npnp."
 license = "CC-BY-NC-4.0"
 repository = "https://github.com/linkyourbin/seex"
@@ -19,6 +19,8 @@ tauri-build = { version = "2.5.6", features = [] }
 tauri = { version = "2.10.3", features = [] }
 tauri-plugin-opener = "2.5.3"
 tauri-plugin-dialog = "2.7.0"
+tauri-plugin-process = "2.3.1"
+tauri-plugin-updater = "2.10.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 arboard = "3.6.1"

@@ -2,6 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
 
 declare const __APP_VERSION__: string;
 
@@ -81,6 +83,17 @@ interface ExportCardOptions {
   statusId: string;
   resultId: string;
   result: string | null;
+}
+
+type UpdateStatusKind = "idle" | "checking" | "available" | "current" | "installing" | "ready" | "error";
+
+interface UpdateUiState {
+  status: UpdateStatusKind;
+  update: Update | null;
+  messageKey: string;
+  message: string;
+  downloaded: number;
+  total: number | null;
 }
 
 const nlbnModes: NlbnMode[] = ["full", "symbol", "footprint", "3d"];
@@ -174,6 +187,26 @@ const enTranslations: Record<string, string> = {
   "language.select": "Select Language",
   "about.tagline": "Clipboard Event Tracker",
   "about.desc": "Monitors clipboard in real time, extracts component IDs using keyword or regex, and exports via nlbn or npnp.",
+  "about.workflowTitle": "Focused export workflow",
+  "about.workflowDesc": "Capture LCSC IDs from clipboard history, keep a clean match list, and export libraries without leaving the desk tool.",
+  "about.integrationsTitle": "Native integrations",
+  "about.integrationsDesc": "Built on Tauri with Rust-backed export pipelines for KiCad and Altium workflows.",
+  "about.releaseTitle": "Release channel",
+  "about.releaseDesc": "Signed GitHub releases can be checked and installed from inside SeEx.",
+  "about.platforms": "Windows | macOS | Linux",
+  "about.updates": "Updates",
+  "about.currentVersion": "Current version",
+  "about.checkUpdates": "Check",
+  "about.installUpdate": "Install update",
+  "about.restartNow": "Restart",
+  "about.updateIdle": "Check GitHub Releases for a signed SeEx update.",
+  "about.updateChecking": "Checking for updates...",
+  "about.updateCurrent": "You are running the latest version.",
+  "about.updateAvailable": "SeEx {version} is available.",
+  "about.updateInstalling": "Downloading and installing update...",
+  "about.updateReady": "Update installed. Restart SeEx to finish.",
+  "about.updateError": "Update check failed: {error}",
+  "about.updateProgress": "{downloaded} / {total}",
   "status.keyword": "Keyword:",
   "status.none": "none",
 };
@@ -265,6 +298,26 @@ const zhTranslations: Record<string, string> = {
   "language.select": "\u9009\u62e9\u8bed\u8a00",
   "about.tagline": "\u526a\u8d34\u677f\u4e8b\u4ef6\u8ffd\u8e2a\u5668",
   "about.desc": "\u5b9e\u65f6\u76d1\u542c\u526a\u8d34\u677f\uff0c\u6309\u5173\u952e\u5b57\u6216\u6b63\u5219\u63d0\u53d6\u5143\u4ef6 ID\uff0c\u5e76\u901a\u8fc7 nlbn \u6216 npnp \u5bfc\u51fa\u3002",
+  "about.workflowTitle": "\u4e13\u6ce8\u7684\u5bfc\u51fa\u6d41\u7a0b",
+  "about.workflowDesc": "\u4ece\u526a\u8d34\u677f\u5386\u53f2\u6355\u83b7 LCSC ID\uff0c\u7ef4\u6301\u6e05\u6670\u7684\u5339\u914d\u5217\u8868\uff0c\u5e76\u76f4\u63a5\u5bfc\u51fa\u5143\u4ef6\u5e93\u3002",
+  "about.integrationsTitle": "\u539f\u751f\u96c6\u6210",
+  "about.integrationsDesc": "\u57fa\u4e8e Tauri \u548c Rust \u5bfc\u51fa\u7ba1\u7ebf\uff0c\u652f\u6301 KiCad \u4e0e Altium \u5de5\u4f5c\u6d41\u3002",
+  "about.releaseTitle": "\u53d1\u5e03\u901a\u9053",
+  "about.releaseDesc": "\u53ef\u5728 SeEx \u5185\u68c0\u67e5\u5e76\u5b89\u88c5\u5df2\u7b7e\u540d\u7684 GitHub \u53d1\u5e03\u3002",
+  "about.platforms": "Windows | macOS | Linux",
+  "about.updates": "\u66f4\u65b0",
+  "about.currentVersion": "\u5f53\u524d\u7248\u672c",
+  "about.checkUpdates": "\u68c0\u67e5",
+  "about.installUpdate": "\u5b89\u88c5\u66f4\u65b0",
+  "about.restartNow": "\u91cd\u542f",
+  "about.updateIdle": "\u68c0\u67e5 GitHub Releases \u4e0a\u7684 SeEx \u7b7e\u540d\u66f4\u65b0\u3002",
+  "about.updateChecking": "\u6b63\u5728\u68c0\u67e5\u66f4\u65b0...",
+  "about.updateCurrent": "\u5df2\u662f\u6700\u65b0\u7248\u672c\u3002",
+  "about.updateAvailable": "\u53d1\u73b0 SeEx {version}\u3002",
+  "about.updateInstalling": "\u6b63\u5728\u4e0b\u8f7d\u5e76\u5b89\u88c5\u66f4\u65b0...",
+  "about.updateReady": "\u66f4\u65b0\u5df2\u5b89\u88c5\uff0c\u91cd\u542f SeEx \u540e\u751f\u6548\u3002",
+  "about.updateError": "\u66f4\u65b0\u68c0\u67e5\u5931\u8d25: {error}",
+  "about.updateProgress": "{downloaded} / {total}",
   "status.keyword": "\u5173\u952e\u5b57:",
   "status.none": "\u65e0",
 };
@@ -280,6 +333,16 @@ let showHistory = true;
 let matchQuick = true;
 let matchFull = true;
 let lastState: AppState | null = null;
+let updateNoticeVisible = false;
+
+const updateUi: UpdateUiState = {
+  status: "idle",
+  update: null,
+  messageKey: "about.updateIdle",
+  message: "",
+  downloaded: 0,
+  total: null,
+};
 
 const exportUi: Record<ExportTool, { progress: ExportProgressState | null; notice: ExportNotice | null; resultKind: ExportMessageKind }> = {
   nlbn: { progress: null, notice: null, resultKind: "info" },
@@ -291,6 +354,13 @@ const PATTERN_FULL = "regex:\u7f16\u53f7[\uff1a:]\\s*(C\\d+)";
 
 function t(key: string): string {
   return translations[currentLang][key] ?? translations.en[key] ?? key;
+}
+
+function formatT(key: string, values: Record<string, string | number>): string {
+  return Object.entries(values).reduce(
+    (text, [name, value]) => text.replace(new RegExp(`\\{${name}\\}`, "g"), String(value)),
+    t(key),
+  );
 }
 
 function $(id: string): HTMLElement {
@@ -337,6 +407,7 @@ function applyLanguage(lang: Lang) {
   $("btn-lang-en").classList.toggle("active", lang === "en");
   $("btn-lang-zh").classList.toggle("active", lang === "zh");
   $("btn-toggle-matched").textContent = showMatched ? t("monitor.show") : t("monitor.hide");
+  renderUpdateUi();
 }
 
 function switchPage(pageName: string) {
@@ -731,6 +802,145 @@ function showExportError(tool: ExportTool, error: string) {
   rerenderState();
 }
 
+function formatBytes(value: number): string {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function setUpdateState(next: Partial<UpdateUiState>) {
+  Object.assign(updateUi, next);
+  renderUpdateUi();
+}
+
+function updateMessage(): string {
+  if (updateUi.message) return updateUi.message;
+  if (updateUi.status === "available" && updateUi.update) {
+    return formatT("about.updateAvailable", { version: updateUi.update.version });
+  }
+  return t(updateUi.messageKey);
+}
+
+function renderUpdateUi() {
+  const status = $("update-status");
+  const action = $("btn-check-update") as HTMLButtonElement;
+  const install = $("btn-install-update") as HTMLButtonElement;
+  const restart = $("btn-restart-update") as HTMLButtonElement;
+  const progress = $("update-progress");
+  const bar = $("update-progress-bar") as HTMLDivElement;
+  const meta = $("update-progress-meta");
+  const notice = $("update-notice");
+
+  const busy = updateUi.status === "checking" || updateUi.status === "installing";
+  const canInstall = updateUi.status === "available" && updateUi.update !== null;
+  const canRestart = updateUi.status === "ready";
+  const showProgress = updateUi.status === "installing";
+  const determinate = showProgress && updateUi.total !== null && updateUi.total > 0;
+  const progressWidth = determinate ? Math.max(8, Math.min(100, Math.round((updateUi.downloaded / updateUi.total!) * 100))) : 42;
+
+  status.textContent = updateMessage();
+  status.className = `update-status update-status-${updateUi.status}`;
+  action.disabled = busy;
+  action.textContent = updateUi.status === "checking" ? t("about.updateChecking") : t("about.checkUpdates");
+  install.disabled = !canInstall || busy;
+  restart.disabled = !canRestart;
+
+  progress.classList.toggle("hidden", !showProgress);
+  progress.classList.toggle("indeterminate", !determinate);
+  bar.style.width = `${progressWidth}%`;
+  meta.textContent =
+    showProgress && updateUi.total
+      ? formatT("about.updateProgress", {
+          downloaded: formatBytes(updateUi.downloaded),
+          total: formatBytes(updateUi.total),
+        })
+      : "";
+
+  notice.classList.toggle("hidden", !updateNoticeVisible || updateUi.status !== "available");
+  notice.textContent = updateUi.update ? formatT("about.updateAvailable", { version: updateUi.update.version }) : "";
+}
+
+async function checkForUpdates(showCurrent: boolean, silentFailure = false) {
+  setUpdateState({
+    status: "checking",
+    messageKey: "about.updateChecking",
+    message: "",
+    downloaded: 0,
+    total: null,
+  });
+
+  try {
+    const update = await check();
+    if (update) {
+      updateNoticeVisible = true;
+      setUpdateState({
+        status: "available",
+        update,
+        messageKey: "about.updateAvailable",
+      });
+      return;
+    }
+
+    updateNoticeVisible = false;
+    setUpdateState({
+      status: showCurrent ? "current" : "idle",
+      update: null,
+      messageKey: showCurrent ? "about.updateCurrent" : "about.updateIdle",
+    });
+  } catch (error) {
+    updateNoticeVisible = false;
+    if (silentFailure) {
+      setUpdateState({
+        status: "idle",
+        update: null,
+        messageKey: "about.updateIdle",
+        message: "",
+      });
+      return;
+    }
+
+    setUpdateState({
+      status: "error",
+      update: null,
+      message: formatT("about.updateError", { error: errorMessage(error) }),
+    });
+  }
+}
+
+async function installUpdate() {
+  if (!updateUi.update) return;
+
+  setUpdateState({
+    status: "installing",
+    messageKey: "about.updateInstalling",
+    message: "",
+    downloaded: 0,
+    total: null,
+  });
+
+  let downloaded = 0;
+  await updateUi.update.downloadAndInstall((event: DownloadEvent) => {
+    if (event.event === "Started") {
+      downloaded = 0;
+      setUpdateState({ downloaded, total: event.data.contentLength ?? null });
+    } else if (event.event === "Progress") {
+      downloaded += event.data.chunkLength;
+      setUpdateState({ downloaded });
+    } else if (event.event === "Finished") {
+      setUpdateState({ downloaded: updateUi.total ?? downloaded });
+    }
+  });
+
+  updateNoticeVisible = false;
+  setUpdateState({
+    status: "ready",
+    update: null,
+    messageKey: "about.updateReady",
+    downloaded: 0,
+    total: null,
+  });
+}
+
 let pendingExportConfigWrite: Promise<void> = Promise.resolve();
 
 function queueExportConfigWrite(operation: () => Promise<void>): Promise<void> {
@@ -763,6 +973,8 @@ async function syncNpnpExportInputs() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   $("about-version").textContent = `v${__APP_VERSION__}`;
+  $("update-current-version").textContent = `v${__APP_VERSION__}`;
+  renderUpdateUi();
 
   const savedLang = localStorage.getItem("seex-lang") as Lang | null;
   if (savedLang === "zh" || savedLang === "en") {
@@ -790,6 +1002,30 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   $("btn-collapse").addEventListener("click", () => {
     $("sidebar").classList.toggle("collapsed");
+  });
+
+  $("btn-check-update").addEventListener("click", () => {
+    void checkForUpdates(true);
+  });
+
+  $("btn-install-update").addEventListener("click", async () => {
+    try {
+      await installUpdate();
+    } catch (error) {
+      setUpdateState({
+        status: "error",
+        update: null,
+        message: formatT("about.updateError", { error: errorMessage(error) }),
+      });
+    }
+  });
+
+  $("btn-restart-update").addEventListener("click", () => {
+    void relaunch();
+  });
+
+  $("update-notice").addEventListener("click", () => {
+    switchPage("about");
   });
 
   $("btn-lang-en").addEventListener("click", () => {
@@ -1099,6 +1335,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 
   showHistory = true;
+  void checkForUpdates(false, true);
 
   document.addEventListener("click", async (e) => {
     const target = e.target as HTMLElement;

@@ -56,13 +56,15 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "SeEx ${{ github.ref_name }}"
           releaseBody: |
             ## SeEx ${{ github.ref_name }}
 
-            Clipboard Event Tracker — monitors clipboard, extracts component IDs, exports via nlbn or npnp.
+            Clipboard Event Tracker - monitors clipboard, extracts component IDs, exports via nlbn or npnp.
 
             ### Downloads
             - **Windows**: `.msi` or `.exe` installer
@@ -73,4 +75,6 @@ jobs:
             See [README](https://github.com/${{ github.repository }}/blob/master/README.md) for details.
           releaseDraft: false
           prerelease: false
+          uploadUpdaterJson: true
+          uploadUpdaterSignatures: true
           args: ${{ matrix.args }}

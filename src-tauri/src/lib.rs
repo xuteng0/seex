@@ -549,11 +549,14 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
         .manage(ManagedMonitor {
             state: monitor_state,
             _handle: Mutex::new(None),
         })
         .setup(move |app| {
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
             let app_handle = app.handle().clone();
             let handle = MonitorHandle::spawn(Arc::clone(&state), app_handle);
             let managed: State<ManagedMonitor> = app.state();

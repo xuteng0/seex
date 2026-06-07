@@ -28,4 +28,9 @@ src/assets/SourceHanSansSC.otf
 src/assets/seex.png
 
 # Local config
+*.key
+*.key.pub
+*.private-key
+*.private-key.pub
+tauri-signing-keys/
 

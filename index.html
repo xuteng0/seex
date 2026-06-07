@@ -293,22 +293,73 @@
             <h2 data-i18n="nav.about">About</h2>
           </div>
           <div class="page-body about-body">
-            <div class="about-layout">
-              <img src="/src/assets/seex.svg" alt="SeEx" class="about-logo" />
-              <div class="about-info">
-                <h3>SeEx</h3>
-                <p class="about-tagline" data-i18n="about.tagline">Clipboard Event Tracker</p>
-                <p class="about-version" id="about-version"></p>
-                <p class="about-desc" data-i18n="about.desc">Monitors clipboard in real time, extracts component IDs using keyword or regex, and exports via nlbn or npnp.</p>
-                <div class="about-tech-row">
-                  <div class="tech-chip" data-url="https://github.com/linkyourbin/nlbn"><span>nlbn</span></div>
-                  <div class="tech-chip"><span>npnp</span></div>
-                  <div class="tech-chip" data-url="https://tauri.app"><img src="/src/assets/tauri.svg" alt="" /><span>Tauri</span></div>
-                  <div class="tech-chip" data-url="https://www.rust-lang.org"><img src="/src/assets/rust.svg" alt="" /><span>Rust</span></div>
-                  <div class="tech-chip" data-url="https://www.typescriptlang.org"><img src="/src/assets/typescript.svg" alt="" /><span>TypeScript</span></div>
-                  <div class="tech-chip" data-url="https://vite.dev"><img src="/src/assets/vite.svg" alt="" /><span>Vite</span></div>
+            <div class="about-shell">
+              <div class="about-hero">
+                <div class="about-mark-wrap">
+                  <img src="/src/assets/seex.svg" alt="SeEx" class="about-logo" />
                 </div>
-                <p class="about-platform">Windows &middot; macOS &middot; Linux</p>
+                <div class="about-info">
+                  <div class="about-kicker" data-i18n="about.tagline">Clipboard Event Tracker</div>
+                  <h3>SeEx</h3>
+                  <p class="about-desc" data-i18n="about.desc">Monitors clipboard in real time, extracts component IDs using keyword or regex, and exports via nlbn or npnp.</p>
+                  <div class="about-meta-row">
+                    <span class="about-version" id="about-version"></span>
+                    <span class="about-platform" data-i18n="about.platforms">Windows | macOS | Linux</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="about-grid">
+                <div class="about-panel">
+                  <span class="about-panel-index">01</span>
+                  <strong data-i18n="about.workflowTitle">Focused export workflow</strong>
+                  <p data-i18n="about.workflowDesc">Capture LCSC IDs from clipboard history, keep a clean match list, and export libraries without leaving the desk tool.</p>
+                </div>
+                <div class="about-panel">
+                  <span class="about-panel-index">02</span>
+                  <strong data-i18n="about.integrationsTitle">Native integrations</strong>
+                  <p data-i18n="about.integrationsDesc">Built on Tauri with Rust-backed export pipelines for KiCad and Altium workflows.</p>
+                </div>
+                <div class="about-panel">
+                  <span class="about-panel-index">03</span>
+                  <strong data-i18n="about.releaseTitle">Release channel</strong>
+                  <p data-i18n="about.releaseDesc">Signed GitHub releases can be checked and installed from inside SeEx.</p>
+                </div>
+              </div>
+
+              <div class="about-lower">
+                <div class="update-card">
+                  <div class="update-card-head">
+                    <div>
+                      <div class="card-title" data-i18n="about.updates">Updates</div>
+                      <div class="hint"><span data-i18n="about.currentVersion">Current version</span>: <span id="update-current-version">v0.0.0</span></div>
+                    </div>
+                    <button class="btn-outline btn-sm" id="btn-check-update" data-i18n="about.checkUpdates">Check</button>
+                  </div>
+                  <div id="update-status" class="update-status">Check GitHub Releases for a signed SeEx update.</div>
+                  <div id="update-progress" class="update-progress hidden">
+                    <div class="update-progress-track">
+                      <div id="update-progress-bar" class="update-progress-bar"></div>
+                    </div>
+                    <span id="update-progress-meta" class="update-progress-meta"></span>
+                  </div>
+                  <div class="update-actions">
+                    <button class="btn-primary btn-sm" id="btn-install-update" disabled data-i18n="about.installUpdate">Install update</button>
+                    <button class="btn-accent btn-sm" id="btn-restart-update" disabled data-i18n="about.restartNow">Restart</button>
+                  </div>
+                </div>
+
+                <div class="tech-panel">
+                  <div class="card-title">Stack</div>
+                  <div class="about-tech-row">
+                    <div class="tech-chip" data-url="https://github.com/linkyourbin/nlbn"><span>nlbn</span></div>
+                    <div class="tech-chip"><span>npnp</span></div>
+                    <div class="tech-chip" data-url="https://tauri.app"><img src="/src/assets/tauri.svg" alt="" /><span>Tauri</span></div>
+                    <div class="tech-chip" data-url="https://www.rust-lang.org"><img src="/src/assets/rust.svg" alt="" /><span>Rust</span></div>
+                    <div class="tech-chip" data-url="https://www.typescriptlang.org"><img src="/src/assets/typescript.svg" alt="" /><span>TypeScript</span></div>
+                    <div class="tech-chip" data-url="https://vite.dev"><img src="/src/assets/vite.svg" alt="" /><span>Vite</span></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -319,6 +370,7 @@
     <footer id="status-bar">
       <span id="status-keyword">Keyword: none</span>
       <span id="status-counts">H: 0 | M: 0</span>
+      <button id="update-notice" class="update-notice hidden" type="button"></button>
       <span id="status-listening" class="status-dot" data-i18n="status.listening">Listening</span>
     </footer>
   </body>
