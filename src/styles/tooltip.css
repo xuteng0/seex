@@ -1,0 +1,22 @@
+/* ================================================================== */
+/*  TOOLTIP                                                            */
+/* ================================================================== */
+
+.app-tooltip {
+  position: fixed;
+  z-index: 1200;
+  max-width: min(360px, calc(100vw - 28px));
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--text);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(44, 24, 16, .18);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  pointer-events: none;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}

@@ -4,6 +4,8 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check, type DownloadEvent, type Update } from "@tauri-apps/plugin-updater";
+import { formatT, setCurrentLang, t, type Lang } from "./i18n";
+import { installTooltips, refreshTooltip } from "./tooltip";
 
 declare const __APP_VERSION__: string;
 
@@ -70,7 +72,6 @@ interface ExportProgressState {
   message: string;
 }
 
-type Lang = "en" | "zh";
 type NlbnMode = "full" | "symbol" | "footprint" | "3d";
 type NpnpMode = "full" | "schlib" | "pcblib";
 
@@ -105,273 +106,6 @@ const exportTargetStorageKeys: Record<ExportTarget, string> = {
   kicad: "seex-export-kicad-enabled",
 };
 
-const enTranslations: Record<string, string> = {
-  "nav.monitor": "Monitor",
-  "nav.history": "History",
-  "nav.export": "Export",
-  "nav.settings": "Settings",
-  "nav.about": "About",
-  "status.listening": "Listening",
-  "monitor.matchMode": "Match Mode",
-  "monitor.quickId": "Quick ID",
-  "monitor.fullInfo": "Full Info",
-  "monitor.monitoring": "Monitoring",
-  "monitor.paused": "Paused",
-  "monitor.matched": "Matched",
-  "monitor.copyIds": "Copy IDs",
-  "monitor.show": "Show",
-  "monitor.hide": "Hide",
-  "monitor.noMatches": "No matches yet",
-  "monitor.clipboard": "Clipboard",
-  "monitor.waiting": "Waiting for clipboard...",
-  "monitor.saveHistory": "Save History",
-  "monitor.exportMatched": "Export Matched",
-  "monitor.savePaths": "Save paths",
-  "monitor.savePathsHint": "Used by Save History and Export Matched.",
-  "monitor.historySavePath": "Save History file:",
-  "monitor.matchedSavePath": "Export Matched file:",
-  "monitor.savePathsExample": "Example: C:\\Users\\xxx\\Documents\\history.txt",
-  "monitor.clearAll": "Clear All",
-  "monitor.sure": "Sure?",
-  "monitor.yes": "Yes",
-  "monitor.no": "No",
-  "monitor.latest": "Latest:",
-  "monitor.copy": "Copy",
-  "monitor.delete": "Delete",
-  "history.desc": "Clipboard history",
-  "history.entries": "entries",
-  "history.empty": "No history yet",
-  "export.desc": "Component export integrations",
-  "export.nlbnExport": "nlbn Export",
-  "export.npnpExport": "npnp Altium Designer Export",
-  "export.nlbnConfig": "nlbn Configuration",
-  "export.npnpConfig": "npnp Altium Designer Configuration",
-  "export.nlbnMode": "Export mode:",
-  "export.nlbnOptions": "Batch options:",
-  "export.itemsReady": "items ready",
-  "export.exportNlbn": "Export nlbn",
-  "export.exportNpnp": "Export npnp",
-  "export.running": "Running...",
-  "export.nlbnRunning": "nlbn is running, please wait...",
-  "export.npnpRunning": "npnp is running, please wait...",
-  "export.mergeOverwriteTitle": "Existing merged library found",
-  "export.mergeOverwriteKicker": "Overwrite warning",
-  "export.mergeOverwriteBody": "Merge without Merge&Append will replace the existing merged library files below.",
-  "export.mergeOverwriteAdvice": "Use Merge&Append to keep existing components and add new ones.",
-  "export.continueOverwrite": "Continue",
-  "export.cancel": "Cancel",
-  "export.cancelled": "Export cancelled.",
-  "export.restartRequired": "SeEx needs to restart before this merge safety check is available.",
-  "export.exportDir": "Export directory:",
-  "export.browse": "Browse",
-  "export.apply": "Apply",
-  "export.toggleTerminal": "Background Only",
-  "export.terminalOn": "Terminal launch disabled",
-  "export.terminalOff": "Terminal launch disabled",
-  "export.example": "Example: C:\\Users\\xxx\\lib",
-  "export.nlbnNotFound": "nlbn is not installed",
-  "export.nlbnInstallHint": "Install nlbn and add it to your system PATH to use this feature.",
-  "export.npnpMode": "Export mode:",
-  "export.npnpOptions": "Batch options:",
-  "export.full": "Full",
-  "export.append": "Append",
-  "export.symbol": "Symbol",
-  "export.footprint": "Footprint",
-  "export.model3d": "3D",
-  "export.schlib": "SchLib",
-  "export.pcblib": "PcbLib",
-  "export.merge": "Merge",
-  "export.mergeAppend": "Merge&Append",
-  "export.nlbnFor": "nlbn Export for KiCad",
-  "export.libraryName": "Library name:",
-  "export.mergedLibraryName": "Merged library name:",
-  "export.nlbnLibraryNameHint": "Optional base name for the generated KiCad library set under the export directory.",
-  "export.parallel": "Parallel jobs:",
-  "export.nlbnParallelHint": "nlbn requires --parallel to be at least 1.",
-  "export.npnpParallelHint": "Controls npnp batch concurrency and must be at least 1.",
-  "export.continueOnError": "Continue On Error",
-  "export.continueOnErrorTitle": "Keep processing the remaining IDs when one item fails.",
-  "export.force": "Force",
-  "export.npnpForceTitle": "Regenerate existing npnp outputs and ignore completed batch checkpoint entries.",
-  "export.overwrite": "Overwrite",
-  "export.nlbnOverwriteTitle": "Allow nlbn to replace existing generated KiCad output files.",
-  "export.projectRelative": "Project Relative",
-  "export.projectRelativeTitle": "Write 3D model paths as project-relative KIPRJMOD references.",
-  "export.nlbnAppendTitle": "Add exported items to an existing KiCad library set in the export directory.",
-  "export.npnpMergeTitle": "Build one merged Altium SchLib/PcbLib from the current input list. Existing same-name merged files may be replaced.",
-  "export.npnpMergeAppendTitle": "Append new IDs into an existing merged Altium library and skip IDs that are already present.",
-  "settings.desc": "Interface and export target preferences",
-  "settings.exportTargets": "Export targets",
-  "settings.exportTargetsHint": "Choose which export tools appear on the Export page.",
-  "settings.altium": "Altium Designer",
-  "settings.kicad": "KiCad",
-  "settings.requireOneTarget": "At least one export target must stay enabled.",
-  "settings.performance": "Performance",
-  "settings.performanceHint": "Set batch concurrency for each export tool.",
-  "settings.kicadParallel": "KiCad parallel jobs:",
-  "settings.altiumParallel": "Altium parallel jobs:",
-  "settings.schematicSource": "Schematic metadata source",
-  "settings.schematicSourceHint": "Choose where npnp reads SchLib descriptions and parameters.",
-  "settings.lcscEnglish": "LCSC English",
-  "settings.szlcscChinese": "SZLCSC Chinese",
-  "language.desc": "Switch interface language",
-  "language.select": "Select Language",
-  "about.tagline": "Clipboard Event Tracker",
-  "about.desc": "Monitors clipboard in real time, extracts component IDs using keyword or regex, and exports via nlbn or npnp.",
-  "about.platforms": "Windows | macOS | Linux",
-  "about.updates": "Updates",
-  "about.currentVersion": "Current version",
-  "about.checkUpdates": "Check",
-  "about.installUpdate": "Install update",
-  "about.restartNow": "Restart",
-  "about.updateIdle": "Check GitHub Releases for a signed SeEx update.",
-  "about.updateChecking": "Checking for updates...",
-  "about.updateCurrent": "You are running the latest version.",
-  "about.updateAvailable": "SeEx {version} is available.",
-  "about.updateInstalling": "Downloading and installing update...",
-  "about.updateReady": "Update installed. Restart SeEx to finish.",
-  "about.updateError": "Update check failed: {error}",
-  "about.updateProgress": "{downloaded} / {total}",
-  "status.keyword": "Keyword:",
-  "status.none": "none",
-};
-
-const zhTranslations: Record<string, string> = {
-  ...enTranslations,
-  "nav.monitor": "\u76d1\u542c",
-  "nav.history": "\u5386\u53f2",
-  "nav.export": "\u5bfc\u51fa",
-  "nav.settings": "\u8bbe\u7f6e",
-  "nav.about": "\u5173\u4e8e",
-  "status.listening": "\u76d1\u542c\u4e2d",
-  "monitor.matchMode": "\u5339\u914d\u6a21\u5f0f",
-  "monitor.quickId": "\u5feb\u901f ID",
-  "monitor.fullInfo": "\u5b8c\u6574\u4fe1\u606f",
-  "monitor.monitoring": "\u76d1\u542c\u4e2d",
-  "monitor.paused": "\u5df2\u6682\u505c",
-  "monitor.matched": "\u5339\u914d\u7ed3\u679c",
-  "monitor.copyIds": "\u590d\u5236 ID",
-  "monitor.show": "\u663e\u793a",
-  "monitor.hide": "\u9690\u85cf",
-  "monitor.noMatches": "\u6682\u65e0\u5339\u914d\u7ed3\u679c",
-  "monitor.clipboard": "\u526a\u8d34\u677f",
-  "monitor.waiting": "\u7b49\u5f85\u526a\u8d34\u677f\u5185\u5bb9...",
-  "monitor.saveHistory": "\u4fdd\u5b58\u5386\u53f2",
-  "monitor.exportMatched": "\u5bfc\u51fa\u5339\u914d",
-  "monitor.savePaths": "\u4fdd\u5b58\u8def\u5f84",
-  "monitor.savePathsHint": "\u7531\u201c\u4fdd\u5b58\u5386\u53f2\u201d\u548c\u201c\u5bfc\u51fa\u5339\u914d\u201d\u4f7f\u7528\u3002",
-  "monitor.historySavePath": "\u4fdd\u5b58\u5386\u53f2\u6587\u4ef6:",
-  "monitor.matchedSavePath": "\u5bfc\u51fa\u5339\u914d\u6587\u4ef6:",
-  "monitor.savePathsExample": "\u793a\u4f8b: C:\\Users\\xxx\\Documents\\history.txt",
-  "monitor.clearAll": "\u6e05\u7a7a\u5168\u90e8",
-  "monitor.sure": "\u786e\u5b9a\u5417\uff1f",
-  "monitor.yes": "\u662f",
-  "monitor.no": "\u5426",
-  "monitor.latest": "\u6700\u65b0:",
-  "monitor.copy": "\u590d\u5236",
-  "monitor.delete": "\u5220\u9664",
-  "history.desc": "\u526a\u8d34\u677f\u5386\u53f2",
-  "history.entries": "\u6761",
-  "history.empty": "\u6682\u65e0\u5386\u53f2\u8bb0\u5f55",
-  "export.desc": "\u5143\u4ef6\u5bfc\u51fa\u96c6\u6210",
-  "export.nlbnExport": "nlbn \u5bfc\u51fa",
-  "export.npnpExport": "npnp Altium Designer \u5bfc\u51fa",
-  "export.nlbnConfig": "nlbn \u914d\u7f6e",
-  "export.npnpConfig": "npnp Altium Designer \u914d\u7f6e",
-  "export.nlbnMode": "\u5bfc\u51fa\u6a21\u5f0f:",
-  "export.nlbnOptions": "\u6279\u5904\u7406\u9009\u9879:",
-  "export.itemsReady": "\u9879\u5f85\u5bfc\u51fa",
-  "export.exportNlbn": "\u5bfc\u51fa nlbn",
-  "export.exportNpnp": "\u5bfc\u51fa npnp",
-  "export.running": "\u8fd0\u884c\u4e2d...",
-  "export.nlbnRunning": "nlbn \u6b63\u5728\u8fd0\u884c\uff0c\u8bf7\u7a0d\u5019...",
-  "export.npnpRunning": "npnp \u6b63\u5728\u8fd0\u884c\uff0c\u8bf7\u7a0d\u5019...",
-  "export.mergeOverwriteTitle": "\u53d1\u73b0\u5df2\u6709\u5408\u5e76\u5e93",
-  "export.mergeOverwriteKicker": "\u8986\u76d6\u63d0\u9192",
-  "export.mergeOverwriteBody": "\u672a\u542f\u7528\u201c\u5408\u5e76\u8ffd\u52a0\u201d\u65f6\uff0c\u5408\u5e76\u5bfc\u51fa\u4f1a\u66ff\u6362\u4e0b\u5217\u5df2\u6709\u5e93\u6587\u4ef6\u3002",
-  "export.mergeOverwriteAdvice": "\u5982\u679c\u8981\u4fdd\u7559\u65e7\u5143\u4ef6\u5e76\u6dfb\u52a0\u65b0\u5143\u4ef6\uff0c\u5efa\u8bae\u52fe\u9009\u201c\u5408\u5e76\u8ffd\u52a0\u201d\u3002",
-  "export.continueOverwrite": "\u7ee7\u7eed",
-  "export.cancel": "\u53d6\u6d88",
-  "export.cancelled": "\u5df2\u53d6\u6d88\u5bfc\u51fa\u3002",
-  "export.restartRequired": "\u9700\u8981\u91cd\u542f SeEx \u540e\u624d\u80fd\u4f7f\u7528\u5408\u5e76\u8986\u76d6\u68c0\u67e5\u3002",
-  "export.exportDir": "\u5bfc\u51fa\u76ee\u5f55:",
-  "export.browse": "\u6d4f\u89c8",
-  "export.apply": "\u5e94\u7528",
-  "export.toggleTerminal": "\u4ec5\u540e\u53f0\u8fd0\u884c",
-  "export.terminalOn": "\u5df2\u7981\u7528\u7ec8\u7aef\u542f\u52a8",
-  "export.terminalOff": "\u5df2\u7981\u7528\u7ec8\u7aef\u542f\u52a8",
-  "export.example": "\u793a\u4f8b: C:\\Users\\xxx\\lib",
-  "export.nlbnNotFound": "\u672a\u5b89\u88c5 nlbn",
-  "export.nlbnInstallHint": "\u8bf7\u5148\u5b89\u88c5 nlbn\uff0c\u5e76\u5c06\u5176\u52a0\u5165\u7cfb\u7edf PATH \u540e\u518d\u4f7f\u7528\u6b64\u529f\u80fd\u3002",
-  "export.npnpMode": "\u5bfc\u51fa\u6a21\u5f0f:",
-  "export.npnpOptions": "\u6279\u5904\u7406\u9009\u9879:",
-  "export.full": "\u5b8c\u6574",
-  "export.append": "\u8ffd\u52a0",
-  "export.symbol": "\u7b26\u53f7",
-  "export.footprint": "\u5c01\u88c5",
-  "export.model3d": "3D",
-  "export.merge": "\u5408\u5e76",
-  "export.mergeAppend": "\u5408\u5e76\u8ffd\u52a0",
-  "export.nlbnFor": "nlbn KiCad \u5bfc\u51fa",
-  "export.libraryName": "\u5e93\u540d\u79f0:",
-  "export.mergedLibraryName": "\u5408\u5e76\u5e93\u540d\u79f0:",
-  "export.nlbnLibraryNameHint": "\u53ef\u9009\uff0c\u7528\u4e8e\u8bbe\u5b9a\u5bfc\u51fa\u76ee\u5f55\u4e0b KiCad \u5e93\u96c6\u7684\u57fa\u7840\u540d\u79f0\u3002",
-  "export.parallel": "\u5e76\u884c\u4efb\u52a1\u6570:",
-  "export.nlbnParallelHint": "nlbn \u8981\u6c42 --parallel \u81f3\u5c11\u4e3a 1\u3002",
-  "export.npnpParallelHint": "\u63a7\u5236 npnp \u6279\u91cf\u5bfc\u51fa\u5e76\u53d1\u6570\uff0c\u4e14\u81f3\u5c11\u4e3a 1\u3002",
-  "export.continueOnError": "\u51fa\u9519\u7ee7\u7eed",
-  "export.continueOnErrorTitle": "\u67d0\u4e2a\u5143\u4ef6\u5bfc\u51fa\u5931\u8d25\u65f6\uff0c\u7ee7\u7eed\u5904\u7406\u5269\u4f59 ID\u3002",
-  "export.force": "\u5f3a\u5236",
-  "export.npnpForceTitle": "\u91cd\u65b0\u751f\u6210\u5df2\u6709 npnp \u8f93\u51fa\uff0c\u5e76\u5ffd\u7565\u6279\u5904\u7406 checkpoint \u4e2d\u5df2\u5b8c\u6210\u7684\u9879\u76ee\u3002",
-  "export.overwrite": "\u8986\u76d6",
-  "export.nlbnOverwriteTitle": "\u5141\u8bb8 nlbn \u66ff\u6362\u5df2\u6709\u7684 KiCad \u751f\u6210\u6587\u4ef6\u3002",
-  "export.projectRelative": "\u9879\u76ee\u76f8\u5bf9\u8def\u5f84",
-  "export.projectRelativeTitle": "\u5c06 3D \u6a21\u578b\u8def\u5f84\u5199\u6210 KIPRJMOD \u98ce\u683c\u7684\u9879\u76ee\u76f8\u5bf9\u5f15\u7528\u3002",
-  "export.nlbnAppendTitle": "\u5c06\u5bfc\u51fa\u5143\u4ef6\u8ffd\u52a0\u5230\u5bfc\u51fa\u76ee\u5f55\u4e0b\u5df2\u6709\u7684 KiCad \u5e93\u96c6\u3002",
-  "export.npnpMergeTitle": "\u7528\u5f53\u524d\u8f93\u5165\u5217\u8868\u751f\u6210\u4e00\u4e2a\u5408\u5e76 Altium SchLib/PcbLib\uff0c\u540c\u540d\u65e7\u5408\u5e76\u5e93\u53ef\u80fd\u88ab\u66ff\u6362\u3002",
-  "export.npnpMergeAppendTitle": "\u5c06\u65b0 ID \u8ffd\u52a0\u5230\u5df2\u6709\u7684\u5408\u5e76 Altium \u5e93\uff0c\u5e76\u8df3\u8fc7\u5df2\u5b58\u5728\u7684 ID\u3002",
-  "settings.desc": "\u754c\u9762\u548c\u5bfc\u51fa\u76ee\u6807\u504f\u597d",
-  "settings.exportTargets": "\u5bfc\u51fa\u76ee\u6807",
-  "settings.exportTargetsHint": "\u9009\u62e9\u54ea\u4e9b\u5bfc\u51fa\u5de5\u5177\u663e\u793a\u5728\u5bfc\u51fa\u9875\u9762\u3002",
-  "settings.altium": "Altium Designer",
-  "settings.kicad": "KiCad",
-  "settings.requireOneTarget": "\u81f3\u5c11\u9700\u8981\u4fdd\u7559\u4e00\u4e2a\u5bfc\u51fa\u76ee\u6807\u3002",
-  "settings.performance": "\u6027\u80fd",
-  "settings.performanceHint": "\u8bbe\u7f6e\u5404\u5bfc\u51fa\u5de5\u5177\u7684\u6279\u5904\u7406\u5e76\u53d1\u6570\u3002",
-  "settings.kicadParallel": "KiCad \u5e76\u884c\u4efb\u52a1\u6570:",
-  "settings.altiumParallel": "Altium \u5e76\u884c\u4efb\u52a1\u6570:",
-  "settings.schematicSource": "\u539f\u7406\u56fe\u53c2\u6570\u6765\u6e90",
-  "settings.schematicSourceHint": "\u9009\u62e9 npnp \u4ece\u54ea\u91cc\u8bfb\u53d6 SchLib \u63cf\u8ff0\u548c\u53c2\u6570\u3002",
-  "settings.lcscEnglish": "LCSC \u82f1\u6587",
-  "settings.szlcscChinese": "SZLCSC \u4e2d\u6587",
-  "language.desc": "\u5207\u6362\u754c\u9762\u8bed\u8a00",
-  "language.select": "\u9009\u62e9\u8bed\u8a00",
-  "about.tagline": "\u526a\u8d34\u677f\u4e8b\u4ef6\u8ffd\u8e2a\u5668",
-  "about.desc": "\u5b9e\u65f6\u76d1\u542c\u526a\u8d34\u677f\uff0c\u6309\u5173\u952e\u5b57\u6216\u6b63\u5219\u63d0\u53d6\u5143\u4ef6 ID\uff0c\u5e76\u901a\u8fc7 nlbn \u6216 npnp \u5bfc\u51fa\u3002",
-  "about.platforms": "Windows | macOS | Linux",
-  "about.updates": "\u66f4\u65b0",
-  "about.currentVersion": "\u5f53\u524d\u7248\u672c",
-  "about.checkUpdates": "\u68c0\u67e5",
-  "about.installUpdate": "\u5b89\u88c5\u66f4\u65b0",
-  "about.restartNow": "\u91cd\u542f",
-  "about.updateIdle": "\u68c0\u67e5 GitHub Releases \u4e0a\u7684 SeEx \u7b7e\u540d\u66f4\u65b0\u3002",
-  "about.updateChecking": "\u6b63\u5728\u68c0\u67e5\u66f4\u65b0...",
-  "about.updateCurrent": "\u5df2\u662f\u6700\u65b0\u7248\u672c\u3002",
-  "about.updateAvailable": "\u53d1\u73b0 SeEx {version}\u3002",
-  "about.updateInstalling": "\u6b63\u5728\u4e0b\u8f7d\u5e76\u5b89\u88c5\u66f4\u65b0...",
-  "about.updateReady": "\u66f4\u65b0\u5df2\u5b89\u88c5\uff0c\u91cd\u542f SeEx \u540e\u751f\u6548\u3002",
-  "about.updateError": "\u66f4\u65b0\u68c0\u67e5\u5931\u8d25: {error}",
-  "about.updateProgress": "{downloaded} / {total}",
-  "status.keyword": "\u5173\u952e\u5b57:",
-  "status.none": "\u65e0",
-};
-
-const translations: Record<Lang, Record<string, string>> = {
-  en: enTranslations,
-  zh: zhTranslations,
-};
-
-let currentLang: Lang = "en";
 let showMatched = true;
 let showHistory = true;
 let matchQuick = true;
@@ -379,7 +113,6 @@ let matchFull = true;
 let lastState: AppState | null = null;
 let updateNoticeVisible = false;
 let exportTargetWarningTimer: number | null = null;
-let activeTooltipElement: HTMLElement | null = null;
 
 const exportTargets: Record<ExportTarget, boolean> = {
   altium: true,
@@ -403,17 +136,6 @@ const exportUi: Record<ExportTool, { progress: ExportProgressState | null; notic
 const PATTERN_QUICK = "regex:(?m)^(C\\d{3,})$";
 const PATTERN_FULL = "regex:\u7f16\u53f7[\uff1a:]\\s*(C\\d+)";
 
-function t(key: string): string {
-  return translations[currentLang][key] ?? translations.en[key] ?? key;
-}
-
-function formatT(key: string, values: Record<string, string | number>): string {
-  return Object.entries(values).reduce(
-    (text, [name, value]) => text.replace(new RegExp(`\\{${name}\\}`, "g"), String(value)),
-    t(key),
-  );
-}
-
 function $(id: string): HTMLElement {
   return document.getElementById(id)!;
 }
@@ -429,81 +151,6 @@ function escapeAttr(s: string): string {
     .replace(/'/g, "&#39;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-}
-
-function positionTooltip(anchor: HTMLElement, clientX?: number, clientY?: number) {
-  const tooltip = $("app-tooltip");
-  const margin = 12;
-  const gap = 10;
-  const rect = anchor.getBoundingClientRect();
-  const tooltipRect = tooltip.getBoundingClientRect();
-  const preferredX = clientX ?? rect.left + rect.width / 2;
-  const preferredY = clientY ?? rect.bottom;
-  let left = preferredX + gap;
-  let top = preferredY + gap;
-
-  if (left + tooltipRect.width + margin > window.innerWidth) {
-    left = window.innerWidth - tooltipRect.width - margin;
-  }
-  if (left < margin) {
-    left = margin;
-  }
-  if (top + tooltipRect.height + margin > window.innerHeight) {
-    top = preferredY - tooltipRect.height - gap;
-  }
-  if (top < margin) {
-    top = margin;
-  }
-
-  tooltip.style.left = `${left}px`;
-  tooltip.style.top = `${top}px`;
-}
-
-function showTooltip(anchor: HTMLElement, clientX?: number, clientY?: number) {
-  const key = anchor.getAttribute("data-i18n-title");
-  if (!key) {
-    return;
-  }
-
-  const tooltip = $("app-tooltip");
-  tooltip.textContent = t(key);
-  tooltip.classList.remove("hidden");
-  activeTooltipElement = anchor;
-  positionTooltip(anchor, clientX, clientY);
-}
-
-function hideTooltip(anchor?: HTMLElement) {
-  if (anchor && activeTooltipElement !== anchor) {
-    return;
-  }
-
-  const tooltip = $("app-tooltip");
-  tooltip.classList.add("hidden");
-  tooltip.textContent = "";
-  activeTooltipElement = null;
-}
-
-function installTooltips() {
-  document.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((el) => {
-    el.removeAttribute("title");
-    if (el.dataset.tooltipBound === "true") {
-      return;
-    }
-
-    el.dataset.tooltipBound = "true";
-    el.addEventListener("mouseenter", (event) => {
-      showTooltip(el, event.clientX, event.clientY);
-    });
-    el.addEventListener("mousemove", (event) => {
-      if (activeTooltipElement === el) {
-        positionTooltip(el, event.clientX, event.clientY);
-      }
-    });
-    el.addEventListener("mouseleave", () => hideTooltip(el));
-    el.addEventListener("focus", () => showTooltip(el));
-    el.addEventListener("blur", () => hideTooltip(el));
-    el.addEventListener("click", () => hideTooltip(el));
-  });
 }
 
 function showMergeOverwriteModal(conflicts: string[]): Promise<boolean> {
@@ -566,7 +213,7 @@ function buildKeyword(): string {
 }
 
 function applyLanguage(lang: Lang) {
-  currentLang = lang;
+  setCurrentLang(lang);
   localStorage.setItem("seex-lang", lang);
 
   document.documentElement.classList.toggle("lang-zh", lang === "zh");
@@ -586,9 +233,7 @@ function applyLanguage(lang: Lang) {
     (el as HTMLElement).removeAttribute("title");
   });
 
-  if (activeTooltipElement) {
-    showTooltip(activeTooltipElement);
-  }
+  refreshTooltip();
 
   $("btn-lang-en").classList.toggle("active", lang === "en");
   $("btn-lang-zh").classList.toggle("active", lang === "zh");
