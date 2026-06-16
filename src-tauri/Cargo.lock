@@ -2632,8 +2632,6 @@ checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
 [[package]]
 name = "npnp"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c16039c63c8e84ab46842f614c866f557760bb2d0d828488a51eb87bbc66bda"
 dependencies = [
  "cfb 0.14.0",
  "clap",

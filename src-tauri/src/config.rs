@@ -71,6 +71,7 @@ pub struct NpnpConfig {
     pub library_name: String,
     pub parallel: usize,
     pub continue_on_error: bool,
+    pub lcsc_english: bool,
     pub force: bool,
 }
 
@@ -84,6 +85,7 @@ impl Default for NpnpConfig {
             library_name: "SeExMerged".to_string(),
             parallel: 4,
             continue_on_error: true,
+            lcsc_english: false,
             force: false,
         }
     }

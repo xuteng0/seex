@@ -37,6 +37,7 @@ pub struct AppState {
     pub npnp_library_name: String,
     pub npnp_parallel: usize,
     pub npnp_continue_on_error: bool,
+    pub npnp_lcsc_english: bool,
     pub npnp_force: bool,
     pub monitoring: bool,
     pub history_count: usize,
@@ -71,6 +72,7 @@ fn snapshot_config(state: &MonitorState) -> AppConfig {
             library_name: state.npnp_library_name.clone(),
             parallel: state.npnp_parallel,
             continue_on_error: state.npnp_continue_on_error,
+            lcsc_english: state.npnp_lcsc_english,
             force: state.npnp_force,
         },
         monitor: MonitorConfig {
@@ -117,6 +119,7 @@ fn get_state(monitor: State<ManagedMonitor>) -> AppState {
             npnp_library_name: m.npnp_library_name.clone(),
             npnp_parallel: m.npnp_parallel,
             npnp_continue_on_error: m.npnp_continue_on_error,
+            npnp_lcsc_english: m.npnp_lcsc_english,
             npnp_force: m.npnp_force,
             monitoring: m.monitoring,
             history_save_path: m.history_save_path.clone(),
@@ -147,6 +150,7 @@ fn get_state(monitor: State<ManagedMonitor>) -> AppState {
             npnp_library_name: defaults.npnp.library_name,
             npnp_parallel: defaults.npnp.parallel,
             npnp_continue_on_error: defaults.npnp.continue_on_error,
+            npnp_lcsc_english: defaults.npnp.lcsc_english,
             npnp_force: defaults.npnp.force,
             monitoring: true,
             history_count: 0,
@@ -420,6 +424,14 @@ fn set_npnp_continue_on_error(monitor: State<ManagedMonitor>, continue_on_error:
 }
 
 #[tauri::command]
+fn set_npnp_lcsc_english(monitor: State<ManagedMonitor>, lcsc_english: bool) {
+    if let Ok(mut m) = monitor.state.lock() {
+        m.set_npnp_lcsc_english(lcsc_english);
+    }
+    save_config(&monitor);
+}
+
+#[tauri::command]
 fn set_npnp_force(monitor: State<ManagedMonitor>, force: bool) {
     if let Ok(mut m) = monitor.state.lock() {
         m.set_npnp_force(force);
@@ -488,6 +500,7 @@ fn npnp_export(monitor: State<ManagedMonitor>, app_handle: AppHandle) -> String 
             library_name: m.npnp_library_name.clone(),
             parallel: m.npnp_parallel,
             continue_on_error: m.npnp_continue_on_error,
+            lcsc_english: m.npnp_lcsc_english,
             force: m.npnp_force,
         }
     } else {
@@ -536,6 +549,7 @@ pub fn run() {
         s.set_npnp_library_name(config.npnp.library_name.clone());
         s.set_npnp_parallel(config.npnp.parallel);
         s.set_npnp_continue_on_error(config.npnp.continue_on_error);
+        s.set_npnp_lcsc_english(config.npnp.lcsc_english);
         s.set_npnp_force(config.npnp.force);
         s.set_history_save_path(config.monitor.history_save_path.clone());
         s.set_matched_save_path(config.monitor.matched_save_path.clone());
@@ -590,6 +604,7 @@ pub fn run() {
             set_npnp_library_name,
             set_npnp_parallel,
             set_npnp_continue_on_error,
+            set_npnp_lcsc_english,
             set_npnp_force,
             check_nlbn,
             nlbn_export,

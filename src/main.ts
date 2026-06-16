@@ -31,6 +31,7 @@ interface AppState {
   npnp_library_name: string;
   npnp_parallel: number;
   npnp_continue_on_error: boolean;
+  npnp_lcsc_english: boolean;
   npnp_force: boolean;
   monitoring: boolean;
   history_count: number;
@@ -179,6 +180,8 @@ const enTranslations: Record<string, string> = {
   "export.nlbnParallelHint": "nlbn requires --parallel to be at least 1.",
   "export.npnpParallelHint": "Controls npnp batch concurrency and must be at least 1.",
   "export.continueOnError": "Continue On Error",
+  "export.lcscEnglish": "LCSC English",
+  "export.lcscEnglishHint": "Use English metadata from lcsc.com for SchLib descriptions and parameters while keeping EasyEDA symbol/footprint geometry.",
   "export.force": "Force",
   "export.overwrite": "Overwrite",
   "export.projectRelative": "Project Relative",
@@ -284,6 +287,8 @@ const zhTranslations: Record<string, string> = {
   "export.nlbnParallelHint": "nlbn \u8981\u6c42 --parallel \u81f3\u5c11\u4e3a 1\u3002",
   "export.npnpParallelHint": "\u63a7\u5236 npnp \u6279\u91cf\u5bfc\u51fa\u5e76\u53d1\u6570\uff0c\u4e14\u81f3\u5c11\u4e3a 1\u3002",
   "export.continueOnError": "\u51fa\u9519\u7ee7\u7eed",
+  "export.lcscEnglish": "LCSC \u82f1\u6587",
+  "export.lcscEnglishHint": "\u4f7f\u7528 lcsc.com \u82f1\u6587\u5143\u6570\u636e\u751f\u6210 SchLib \u63cf\u8ff0\u548c\u53c2\u6570\uff0c\u7b26\u53f7/\u5c01\u88c5\u51e0\u4f55\u4ecd\u4f7f\u7528 EasyEDA \u6570\u636e\u3002",
   "export.force": "\u5f3a\u5236",
   "export.overwrite": "\u8986\u76d6",
   "export.projectRelative": "\u9879\u76ee\u76f8\u5bf9\u8def\u5f84",
@@ -390,6 +395,11 @@ function applyLanguage(lang: Lang) {
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
     const key = el.getAttribute("data-i18n-placeholder")!;
     (el as HTMLInputElement).placeholder = t(key);
+  });
+
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title")!;
+    (el as HTMLElement).title = t(key);
   });
 
   $("btn-lang-en").classList.toggle("active", lang === "en");
@@ -620,6 +630,7 @@ function renderState(state: AppState) {
   $("btn-toggle-npnp-merge").classList.toggle("active", state.npnp_merge);
   $("btn-toggle-npnp-append").classList.toggle("active", state.npnp_append);
   $("btn-toggle-npnp-continue-on-error").classList.toggle("active", state.npnp_continue_on_error);
+  $("btn-toggle-npnp-lcsc-english").classList.toggle("active", state.npnp_lcsc_english);
   $("btn-toggle-npnp-force").classList.toggle("active", state.npnp_force);
 
   const libraryInput = $("npnp-library-name-input") as HTMLInputElement;
@@ -1218,6 +1229,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     const active = $("btn-toggle-npnp-continue-on-error").classList.contains("active");
     await queueExportConfigWrite(async () => {
       await invoke("set_npnp_continue_on_error", { continueOnError: !active });
+      await refreshState();
+    });
+  });
+
+  $("btn-toggle-npnp-lcsc-english").addEventListener("click", async () => {
+    const active = $("btn-toggle-npnp-lcsc-english").classList.contains("active");
+    await queueExportConfigWrite(async () => {
+      await invoke("set_npnp_lcsc_english", { lcscEnglish: !active });
       await refreshState();
     });
   });

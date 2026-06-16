@@ -30,3 +30,6 @@ regex = "1.12.3"
 npnp = "1.0.1"
 tokio = { version = "1.50.0", features = ["rt", "sync"] }
 nlbn = "1.0.30"
+
+[patch.crates-io]
+npnp = { path = "../../npnp" }

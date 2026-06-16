@@ -34,3 +34,6 @@ src/assets/seex.png
 *.private-key.pub
 tauri-signing-keys/
 
+# Local sibling/source checkout
+npnp/
+src-tauri/vendor/npnp/

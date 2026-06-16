@@ -38,6 +38,7 @@ pub struct ExportRequest {
     pub library_name: String,
     pub parallel: usize,
     pub continue_on_error: bool,
+    pub lcsc_english: bool,
     pub force: bool,
 }
 
@@ -165,6 +166,7 @@ fn build_batch_options(req: &ExportRequest, input_path: &PathBuf) -> BatchOption
         library_name: effective_library_name(req),
         parallel: req.parallel.max(1),
         continue_on_error: req.continue_on_error,
+        lcsc_english: req.lcsc_english,
         force: req.force,
     }
 }
@@ -217,8 +219,9 @@ fn format_summary(req: &ExportRequest, summary: &BatchSummary) -> String {
     ));
 
     lines.push(format!(
-        "Continue on error: {} | Force: {}",
+        "Continue on error: {} | LCSC English: {} | Force: {}",
         yes_no(req.continue_on_error),
+        yes_no(req.lcsc_english),
         yes_no(req.force),
     ));
 
