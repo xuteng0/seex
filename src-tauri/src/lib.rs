@@ -440,6 +440,21 @@ fn set_npnp_force(monitor: State<ManagedMonitor>, force: bool) {
 }
 
 #[tauri::command]
+fn npnp_fresh_merge_conflicts(monitor: State<ManagedMonitor>) -> Vec<String> {
+    if let Ok(m) = monitor.state.lock() {
+        npnp::existing_fresh_merge_outputs(
+            &m.npnp_output_path,
+            &m.npnp_mode,
+            m.npnp_merge,
+            m.npnp_append,
+            &m.npnp_library_name,
+        )
+    } else {
+        Vec::new()
+    }
+}
+
+#[tauri::command]
 fn check_nlbn() -> Result<String, String> {
     #[cfg(target_os = "windows")]
     let result = std::process::Command::new("cmd")
@@ -606,6 +621,7 @@ pub fn run() {
             set_npnp_continue_on_error,
             set_npnp_lcsc_english,
             set_npnp_force,
+            npnp_fresh_merge_conflicts,
             check_nlbn,
             nlbn_export,
             npnp_export,

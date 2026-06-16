@@ -155,9 +155,11 @@ fn user_config_dir() -> Option<PathBuf> {
 
     #[cfg(target_os = "macos")]
     {
-        std::env::var_os("HOME")
-            .map(PathBuf::from)
-            .map(|path| path.join("Library").join("Application Support").join(APP_CONFIG_DIR))
+        std::env::var_os("HOME").map(PathBuf::from).map(|path| {
+            path.join("Library")
+                .join("Application Support")
+                .join(APP_CONFIG_DIR)
+        })
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]

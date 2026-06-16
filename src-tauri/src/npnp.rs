@@ -42,6 +42,36 @@ pub struct ExportRequest {
     pub force: bool,
 }
 
+pub fn existing_fresh_merge_outputs(
+    output_path: &str,
+    mode: &str,
+    merge: bool,
+    append: bool,
+    library_name: &str,
+) -> Vec<String> {
+    if !merge || append {
+        return Vec::new();
+    }
+
+    let output = PathBuf::from(normalize_output_path(output_path));
+    let library_name = sanitize_filename(&resolve_library_name_parts(library_name));
+    let mut paths = Vec::new();
+    match normalize_mode(mode) {
+        "schlib" => paths.push(output.join(format!("{library_name}.SchLib"))),
+        "pcblib" => paths.push(output.join(format!("{library_name}.PcbLib"))),
+        _ => {
+            paths.push(output.join(format!("{library_name}.SchLib")));
+            paths.push(output.join(format!("{library_name}.PcbLib")));
+        }
+    }
+
+    paths
+        .into_iter()
+        .filter(|path| path.exists())
+        .map(|path| path.display().to_string())
+        .collect()
+}
+
 pub fn spawn_export(state: Arc<Mutex<MonitorState>>, req: ExportRequest, app_handle: AppHandle) {
     if let Ok(mut s) = state.lock() {
         s.npnp_running = true;
@@ -197,9 +227,31 @@ fn effective_library_name(req: &ExportRequest) -> Option<String> {
 }
 
 fn resolve_library_name(req: &ExportRequest) -> String {
-    let trimmed = req.library_name.trim();
+    resolve_library_name_parts(&req.library_name)
+}
+
+fn resolve_library_name_parts(library_name: &str) -> String {
+    let trimmed = library_name.trim();
     if trimmed.is_empty() {
         DEFAULT_LIBRARY_NAME.to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn sanitize_filename(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|ch| match ch {
+            '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' => '_',
+            ch if ch.is_control() => '_',
+            ch => ch,
+        })
+        .collect();
+
+    let trimmed = cleaned.trim_matches(|ch| ch == ' ' || ch == '.').trim();
+    if trimmed.is_empty() {
+        "component".to_string()
     } else {
         trimmed.to_string()
     }

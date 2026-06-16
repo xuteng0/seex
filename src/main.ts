@@ -41,6 +41,7 @@ interface AppState {
 }
 
 type ExportTool = "nlbn" | "npnp";
+type ExportTarget = "altium" | "kicad";
 type ExportMessageKind = "info" | "warn" | "success" | "error";
 
 interface ExportFinishedPayload {
@@ -99,12 +100,16 @@ interface UpdateUiState {
 
 const nlbnModes: NlbnMode[] = ["full", "symbol", "footprint", "3d"];
 const npnpModes: NpnpMode[] = ["full", "schlib", "pcblib"];
+const exportTargetStorageKeys: Record<ExportTarget, string> = {
+  altium: "seex-export-altium-enabled",
+  kicad: "seex-export-kicad-enabled",
+};
 
 const enTranslations: Record<string, string> = {
   "nav.monitor": "Monitor",
   "nav.history": "History",
   "nav.export": "Export",
-  "nav.language": "Language",
+  "nav.settings": "Settings",
   "nav.about": "About",
   "status.listening": "Listening",
   "monitor.matchMode": "Match Mode",
@@ -138,9 +143,9 @@ const enTranslations: Record<string, string> = {
   "history.empty": "No history yet",
   "export.desc": "Component export integrations",
   "export.nlbnExport": "nlbn Export",
-  "export.npnpExport": "npnp Export",
+  "export.npnpExport": "npnp Altium Designer Export",
   "export.nlbnConfig": "nlbn Configuration",
-  "export.npnpConfig": "npnp Configuration",
+  "export.npnpConfig": "npnp Altium Designer Configuration",
   "export.nlbnMode": "Export mode:",
   "export.nlbnOptions": "Batch options:",
   "export.itemsReady": "items ready",
@@ -149,6 +154,14 @@ const enTranslations: Record<string, string> = {
   "export.running": "Running...",
   "export.nlbnRunning": "nlbn is running, please wait...",
   "export.npnpRunning": "npnp is running, please wait...",
+  "export.mergeOverwriteTitle": "Existing merged library found",
+  "export.mergeOverwriteKicker": "Overwrite warning",
+  "export.mergeOverwriteBody": "Merge without Merge&Append will replace the existing merged library files below.",
+  "export.mergeOverwriteAdvice": "Use Merge&Append to keep existing components and add new ones.",
+  "export.continueOverwrite": "Continue",
+  "export.cancel": "Cancel",
+  "export.cancelled": "Export cancelled.",
+  "export.restartRequired": "SeEx needs to restart before this merge safety check is available.",
   "export.exportDir": "Export directory:",
   "export.browse": "Browse",
   "export.apply": "Apply",
@@ -169,23 +182,38 @@ const enTranslations: Record<string, string> = {
   "export.pcblib": "PcbLib",
   "export.merge": "Merge",
   "export.mergeAppend": "Merge&Append",
-  "export.mergeAppendHint": "Merge&Append extends an existing merged library and skips duplicate IDs (requires Merge).",
   "export.nlbnFor": "nlbn Export for KiCad",
-  "export.npnpFor": "npnp Export for Altium Designer",
   "export.libraryName": "Library name:",
-  "export.nlbnAppendHint": "Append targets an existing KiCad library set under the export directory and uses the library name below.",
+  "export.mergedLibraryName": "Merged library name:",
   "export.nlbnLibraryNameHint": "Optional base name for the generated KiCad library set under the export directory.",
-  "export.libraryNameHint": "Used as the merged SchLib/PcbLib file name when Merge is enabled.",
   "export.parallel": "Parallel jobs:",
   "export.nlbnParallelHint": "nlbn requires --parallel to be at least 1.",
   "export.npnpParallelHint": "Controls npnp batch concurrency and must be at least 1.",
   "export.continueOnError": "Continue On Error",
-  "export.lcscEnglish": "LCSC English",
-  "export.lcscEnglishHint": "Use English metadata from lcsc.com for SchLib descriptions and parameters while keeping EasyEDA symbol/footprint geometry.",
+  "export.continueOnErrorTitle": "Keep processing the remaining IDs when one item fails.",
   "export.force": "Force",
+  "export.npnpForceTitle": "Regenerate existing npnp outputs and ignore completed batch checkpoint entries.",
   "export.overwrite": "Overwrite",
+  "export.nlbnOverwriteTitle": "Allow nlbn to replace existing generated KiCad output files.",
   "export.projectRelative": "Project Relative",
-  "export.projectRelativeHint": "Project Relative switches 3D model paths in generated footprints to KIPRJMOD-style references.",
+  "export.projectRelativeTitle": "Write 3D model paths as project-relative KIPRJMOD references.",
+  "export.nlbnAppendTitle": "Add exported items to an existing KiCad library set in the export directory.",
+  "export.npnpMergeTitle": "Build one merged Altium SchLib/PcbLib from the current input list. Existing same-name merged files may be replaced.",
+  "export.npnpMergeAppendTitle": "Append new IDs into an existing merged Altium library and skip IDs that are already present.",
+  "settings.desc": "Interface and export target preferences",
+  "settings.exportTargets": "Export targets",
+  "settings.exportTargetsHint": "Choose which export tools appear on the Export page.",
+  "settings.altium": "Altium Designer",
+  "settings.kicad": "KiCad",
+  "settings.requireOneTarget": "At least one export target must stay enabled.",
+  "settings.performance": "Performance",
+  "settings.performanceHint": "Set batch concurrency for each export tool.",
+  "settings.kicadParallel": "KiCad parallel jobs:",
+  "settings.altiumParallel": "Altium parallel jobs:",
+  "settings.schematicSource": "Schematic metadata source",
+  "settings.schematicSourceHint": "Choose where npnp reads SchLib descriptions and parameters.",
+  "settings.lcscEnglish": "LCSC English",
+  "settings.szlcscChinese": "SZLCSC Chinese",
   "language.desc": "Switch interface language",
   "language.select": "Select Language",
   "about.tagline": "Clipboard Event Tracker",
@@ -213,7 +241,7 @@ const zhTranslations: Record<string, string> = {
   "nav.monitor": "\u76d1\u542c",
   "nav.history": "\u5386\u53f2",
   "nav.export": "\u5bfc\u51fa",
-  "nav.language": "\u8bed\u8a00",
+  "nav.settings": "\u8bbe\u7f6e",
   "nav.about": "\u5173\u4e8e",
   "status.listening": "\u76d1\u542c\u4e2d",
   "monitor.matchMode": "\u5339\u914d\u6a21\u5f0f",
@@ -247,9 +275,9 @@ const zhTranslations: Record<string, string> = {
   "history.empty": "\u6682\u65e0\u5386\u53f2\u8bb0\u5f55",
   "export.desc": "\u5143\u4ef6\u5bfc\u51fa\u96c6\u6210",
   "export.nlbnExport": "nlbn \u5bfc\u51fa",
-  "export.npnpExport": "npnp \u5bfc\u51fa",
+  "export.npnpExport": "npnp Altium Designer \u5bfc\u51fa",
   "export.nlbnConfig": "nlbn \u914d\u7f6e",
-  "export.npnpConfig": "npnp \u914d\u7f6e",
+  "export.npnpConfig": "npnp Altium Designer \u914d\u7f6e",
   "export.nlbnMode": "\u5bfc\u51fa\u6a21\u5f0f:",
   "export.nlbnOptions": "\u6279\u5904\u7406\u9009\u9879:",
   "export.itemsReady": "\u9879\u5f85\u5bfc\u51fa",
@@ -258,6 +286,14 @@ const zhTranslations: Record<string, string> = {
   "export.running": "\u8fd0\u884c\u4e2d...",
   "export.nlbnRunning": "nlbn \u6b63\u5728\u8fd0\u884c\uff0c\u8bf7\u7a0d\u5019...",
   "export.npnpRunning": "npnp \u6b63\u5728\u8fd0\u884c\uff0c\u8bf7\u7a0d\u5019...",
+  "export.mergeOverwriteTitle": "\u53d1\u73b0\u5df2\u6709\u5408\u5e76\u5e93",
+  "export.mergeOverwriteKicker": "\u8986\u76d6\u63d0\u9192",
+  "export.mergeOverwriteBody": "\u672a\u542f\u7528\u201c\u5408\u5e76\u8ffd\u52a0\u201d\u65f6\uff0c\u5408\u5e76\u5bfc\u51fa\u4f1a\u66ff\u6362\u4e0b\u5217\u5df2\u6709\u5e93\u6587\u4ef6\u3002",
+  "export.mergeOverwriteAdvice": "\u5982\u679c\u8981\u4fdd\u7559\u65e7\u5143\u4ef6\u5e76\u6dfb\u52a0\u65b0\u5143\u4ef6\uff0c\u5efa\u8bae\u52fe\u9009\u201c\u5408\u5e76\u8ffd\u52a0\u201d\u3002",
+  "export.continueOverwrite": "\u7ee7\u7eed",
+  "export.cancel": "\u53d6\u6d88",
+  "export.cancelled": "\u5df2\u53d6\u6d88\u5bfc\u51fa\u3002",
+  "export.restartRequired": "\u9700\u8981\u91cd\u542f SeEx \u540e\u624d\u80fd\u4f7f\u7528\u5408\u5e76\u8986\u76d6\u68c0\u67e5\u3002",
   "export.exportDir": "\u5bfc\u51fa\u76ee\u5f55:",
   "export.browse": "\u6d4f\u89c8",
   "export.apply": "\u5e94\u7528",
@@ -276,23 +312,38 @@ const zhTranslations: Record<string, string> = {
   "export.model3d": "3D",
   "export.merge": "\u5408\u5e76",
   "export.mergeAppend": "\u5408\u5e76\u8ffd\u52a0",
-  "export.mergeAppendHint": "\u5408\u5e76\u8ffd\u52a0\u4f1a\u5728\u73b0\u6709\u7684\u5408\u5e76\u5e93\u57fa\u7840\u4e0a\u8ffd\u52a0\u5143\u4ef6\u5e76\u8df3\u8fc7\u91cd\u590d ID\uff08\u9700\u8981\u540c\u65f6\u542f\u7528\u5408\u5e76\uff09\u3002",
   "export.nlbnFor": "nlbn KiCad \u5bfc\u51fa",
-  "export.npnpFor": "npnp Altium Designer \u5bfc\u51fa",
   "export.libraryName": "\u5e93\u540d\u79f0:",
-  "export.nlbnAppendHint": "\u8ffd\u52a0\u4f1a\u5b9a\u5411\u5bfc\u51fa\u76ee\u5f55\u4e0b\u5df2\u5b58\u5728\u7684 KiCad \u5e93\u96c6\uff0c\u5e76\u4f7f\u7528\u4e0b\u65b9\u7684\u5e93\u540d\u79f0\u3002",
+  "export.mergedLibraryName": "\u5408\u5e76\u5e93\u540d\u79f0:",
   "export.nlbnLibraryNameHint": "\u53ef\u9009\uff0c\u7528\u4e8e\u8bbe\u5b9a\u5bfc\u51fa\u76ee\u5f55\u4e0b KiCad \u5e93\u96c6\u7684\u57fa\u7840\u540d\u79f0\u3002",
-  "export.libraryNameHint": "\u542f\u7528\u5408\u5e76\u65f6\u4f5c\u4e3a\u5408\u5e76 SchLib/PcbLib \u6587\u4ef6\u540d\u3002",
   "export.parallel": "\u5e76\u884c\u4efb\u52a1\u6570:",
   "export.nlbnParallelHint": "nlbn \u8981\u6c42 --parallel \u81f3\u5c11\u4e3a 1\u3002",
   "export.npnpParallelHint": "\u63a7\u5236 npnp \u6279\u91cf\u5bfc\u51fa\u5e76\u53d1\u6570\uff0c\u4e14\u81f3\u5c11\u4e3a 1\u3002",
   "export.continueOnError": "\u51fa\u9519\u7ee7\u7eed",
-  "export.lcscEnglish": "LCSC \u82f1\u6587",
-  "export.lcscEnglishHint": "\u4f7f\u7528 lcsc.com \u82f1\u6587\u5143\u6570\u636e\u751f\u6210 SchLib \u63cf\u8ff0\u548c\u53c2\u6570\uff0c\u7b26\u53f7/\u5c01\u88c5\u51e0\u4f55\u4ecd\u4f7f\u7528 EasyEDA \u6570\u636e\u3002",
+  "export.continueOnErrorTitle": "\u67d0\u4e2a\u5143\u4ef6\u5bfc\u51fa\u5931\u8d25\u65f6\uff0c\u7ee7\u7eed\u5904\u7406\u5269\u4f59 ID\u3002",
   "export.force": "\u5f3a\u5236",
+  "export.npnpForceTitle": "\u91cd\u65b0\u751f\u6210\u5df2\u6709 npnp \u8f93\u51fa\uff0c\u5e76\u5ffd\u7565\u6279\u5904\u7406 checkpoint \u4e2d\u5df2\u5b8c\u6210\u7684\u9879\u76ee\u3002",
   "export.overwrite": "\u8986\u76d6",
+  "export.nlbnOverwriteTitle": "\u5141\u8bb8 nlbn \u66ff\u6362\u5df2\u6709\u7684 KiCad \u751f\u6210\u6587\u4ef6\u3002",
   "export.projectRelative": "\u9879\u76ee\u76f8\u5bf9\u8def\u5f84",
-  "export.projectRelativeHint": "\u9879\u76ee\u76f8\u5bf9\u8def\u5f84\u4f1a\u5c06\u751f\u6210\u5c01\u88c5\u4e2d\u7684 3D \u6a21\u578b\u5f15\u7528\u5207\u6362\u4e3a KIPRJMOD \u98ce\u683c\u8def\u5f84\u3002",
+  "export.projectRelativeTitle": "\u5c06 3D \u6a21\u578b\u8def\u5f84\u5199\u6210 KIPRJMOD \u98ce\u683c\u7684\u9879\u76ee\u76f8\u5bf9\u5f15\u7528\u3002",
+  "export.nlbnAppendTitle": "\u5c06\u5bfc\u51fa\u5143\u4ef6\u8ffd\u52a0\u5230\u5bfc\u51fa\u76ee\u5f55\u4e0b\u5df2\u6709\u7684 KiCad \u5e93\u96c6\u3002",
+  "export.npnpMergeTitle": "\u7528\u5f53\u524d\u8f93\u5165\u5217\u8868\u751f\u6210\u4e00\u4e2a\u5408\u5e76 Altium SchLib/PcbLib\uff0c\u540c\u540d\u65e7\u5408\u5e76\u5e93\u53ef\u80fd\u88ab\u66ff\u6362\u3002",
+  "export.npnpMergeAppendTitle": "\u5c06\u65b0 ID \u8ffd\u52a0\u5230\u5df2\u6709\u7684\u5408\u5e76 Altium \u5e93\uff0c\u5e76\u8df3\u8fc7\u5df2\u5b58\u5728\u7684 ID\u3002",
+  "settings.desc": "\u754c\u9762\u548c\u5bfc\u51fa\u76ee\u6807\u504f\u597d",
+  "settings.exportTargets": "\u5bfc\u51fa\u76ee\u6807",
+  "settings.exportTargetsHint": "\u9009\u62e9\u54ea\u4e9b\u5bfc\u51fa\u5de5\u5177\u663e\u793a\u5728\u5bfc\u51fa\u9875\u9762\u3002",
+  "settings.altium": "Altium Designer",
+  "settings.kicad": "KiCad",
+  "settings.requireOneTarget": "\u81f3\u5c11\u9700\u8981\u4fdd\u7559\u4e00\u4e2a\u5bfc\u51fa\u76ee\u6807\u3002",
+  "settings.performance": "\u6027\u80fd",
+  "settings.performanceHint": "\u8bbe\u7f6e\u5404\u5bfc\u51fa\u5de5\u5177\u7684\u6279\u5904\u7406\u5e76\u53d1\u6570\u3002",
+  "settings.kicadParallel": "KiCad \u5e76\u884c\u4efb\u52a1\u6570:",
+  "settings.altiumParallel": "Altium \u5e76\u884c\u4efb\u52a1\u6570:",
+  "settings.schematicSource": "\u539f\u7406\u56fe\u53c2\u6570\u6765\u6e90",
+  "settings.schematicSourceHint": "\u9009\u62e9 npnp \u4ece\u54ea\u91cc\u8bfb\u53d6 SchLib \u63cf\u8ff0\u548c\u53c2\u6570\u3002",
+  "settings.lcscEnglish": "LCSC \u82f1\u6587",
+  "settings.szlcscChinese": "SZLCSC \u4e2d\u6587",
   "language.desc": "\u5207\u6362\u754c\u9762\u8bed\u8a00",
   "language.select": "\u9009\u62e9\u8bed\u8a00",
   "about.tagline": "\u526a\u8d34\u677f\u4e8b\u4ef6\u8ffd\u8e2a\u5668",
@@ -327,6 +378,13 @@ let matchQuick = true;
 let matchFull = true;
 let lastState: AppState | null = null;
 let updateNoticeVisible = false;
+let exportTargetWarningTimer: number | null = null;
+let activeTooltipElement: HTMLElement | null = null;
+
+const exportTargets: Record<ExportTarget, boolean> = {
+  altium: true,
+  kicad: true,
+};
 
 const updateUi: UpdateUiState = {
   status: "idle",
@@ -373,6 +431,133 @@ function escapeAttr(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function positionTooltip(anchor: HTMLElement, clientX?: number, clientY?: number) {
+  const tooltip = $("app-tooltip");
+  const margin = 12;
+  const gap = 10;
+  const rect = anchor.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const preferredX = clientX ?? rect.left + rect.width / 2;
+  const preferredY = clientY ?? rect.bottom;
+  let left = preferredX + gap;
+  let top = preferredY + gap;
+
+  if (left + tooltipRect.width + margin > window.innerWidth) {
+    left = window.innerWidth - tooltipRect.width - margin;
+  }
+  if (left < margin) {
+    left = margin;
+  }
+  if (top + tooltipRect.height + margin > window.innerHeight) {
+    top = preferredY - tooltipRect.height - gap;
+  }
+  if (top < margin) {
+    top = margin;
+  }
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function showTooltip(anchor: HTMLElement, clientX?: number, clientY?: number) {
+  const key = anchor.getAttribute("data-i18n-title");
+  if (!key) {
+    return;
+  }
+
+  const tooltip = $("app-tooltip");
+  tooltip.textContent = t(key);
+  tooltip.classList.remove("hidden");
+  activeTooltipElement = anchor;
+  positionTooltip(anchor, clientX, clientY);
+}
+
+function hideTooltip(anchor?: HTMLElement) {
+  if (anchor && activeTooltipElement !== anchor) {
+    return;
+  }
+
+  const tooltip = $("app-tooltip");
+  tooltip.classList.add("hidden");
+  tooltip.textContent = "";
+  activeTooltipElement = null;
+}
+
+function installTooltips() {
+  document.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((el) => {
+    el.removeAttribute("title");
+    if (el.dataset.tooltipBound === "true") {
+      return;
+    }
+
+    el.dataset.tooltipBound = "true";
+    el.addEventListener("mouseenter", (event) => {
+      showTooltip(el, event.clientX, event.clientY);
+    });
+    el.addEventListener("mousemove", (event) => {
+      if (activeTooltipElement === el) {
+        positionTooltip(el, event.clientX, event.clientY);
+      }
+    });
+    el.addEventListener("mouseleave", () => hideTooltip(el));
+    el.addEventListener("focus", () => showTooltip(el));
+    el.addEventListener("blur", () => hideTooltip(el));
+    el.addEventListener("click", () => hideTooltip(el));
+  });
+}
+
+function showMergeOverwriteModal(conflicts: string[]): Promise<boolean> {
+  const modal = $("merge-overwrite-modal");
+  const fileList = $("merge-overwrite-files");
+  const continueButton = $("btn-merge-overwrite-continue") as HTMLButtonElement;
+  const cancelButton = $("btn-merge-overwrite-cancel") as HTMLButtonElement;
+
+  fileList.innerHTML = "";
+  conflicts.forEach((file) => {
+    const item = document.createElement("div");
+    item.className = "modal-file-item";
+    item.textContent = file;
+    fileList.appendChild(item);
+  });
+
+  modal.classList.remove("hidden");
+  continueButton.focus();
+
+  return new Promise((resolve) => {
+    let onContinue: () => void;
+    let onCancel: () => void;
+    let onOverlayClick: (event: MouseEvent) => void;
+    let onKeyDown: (event: KeyboardEvent) => void;
+
+    const close = (value: boolean) => {
+      modal.classList.add("hidden");
+      continueButton.removeEventListener("click", onContinue);
+      cancelButton.removeEventListener("click", onCancel);
+      modal.removeEventListener("click", onOverlayClick);
+      document.removeEventListener("keydown", onKeyDown);
+      resolve(value);
+    };
+
+    onContinue = () => close(true);
+    onCancel = () => close(false);
+    onOverlayClick = (event: MouseEvent) => {
+      if (event.target === modal) {
+        close(false);
+      }
+    };
+    onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close(false);
+      }
+    };
+
+    continueButton.addEventListener("click", onContinue);
+    cancelButton.addEventListener("click", onCancel);
+    modal.addEventListener("click", onOverlayClick);
+    document.addEventListener("keydown", onKeyDown);
+  });
+}
+
 function buildKeyword(): string {
   const parts: string[] = [];
   if (matchFull) parts.push(PATTERN_FULL);
@@ -398,14 +583,82 @@ function applyLanguage(lang: Lang) {
   });
 
   document.querySelectorAll("[data-i18n-title]").forEach((el) => {
-    const key = el.getAttribute("data-i18n-title")!;
-    (el as HTMLElement).title = t(key);
+    (el as HTMLElement).removeAttribute("title");
   });
+
+  if (activeTooltipElement) {
+    showTooltip(activeTooltipElement);
+  }
 
   $("btn-lang-en").classList.toggle("active", lang === "en");
   $("btn-lang-zh").classList.toggle("active", lang === "zh");
+  renderExportTargetUi();
   $("btn-toggle-matched").textContent = showMatched ? t("monitor.show") : t("monitor.hide");
   renderUpdateUi();
+}
+
+function loadExportTargets() {
+  (Object.keys(exportTargetStorageKeys) as ExportTarget[]).forEach((target) => {
+    const savedValue = localStorage.getItem(exportTargetStorageKeys[target]);
+    exportTargets[target] = savedValue === null ? true : savedValue !== "false";
+  });
+
+  if (!exportTargets.altium && !exportTargets.kicad) {
+    exportTargets.altium = true;
+    exportTargets.kicad = true;
+    saveExportTargets();
+  }
+}
+
+function saveExportTargets() {
+  (Object.keys(exportTargetStorageKeys) as ExportTarget[]).forEach((target) => {
+    localStorage.setItem(exportTargetStorageKeys[target], String(exportTargets[target]));
+  });
+}
+
+function renderExportTargetUi() {
+  $("btn-target-altium").classList.toggle("active", exportTargets.altium);
+  $("btn-target-kicad").classList.toggle("active", exportTargets.kicad);
+
+  document.querySelectorAll<HTMLElement>('[data-export-target="altium"]').forEach((el) => {
+    el.classList.toggle("hidden", !exportTargets.altium);
+  });
+  document.querySelectorAll<HTMLElement>('[data-export-target="kicad"]').forEach((el) => {
+    el.classList.toggle("hidden", !exportTargets.kicad);
+  });
+}
+
+function renderSchematicMetadataSource(lcscEnglish: boolean) {
+  $("btn-schematic-source-lcsc").classList.toggle("active", lcscEnglish);
+  $("btn-schematic-source-szlcsc").classList.toggle("active", !lcscEnglish);
+}
+
+function showExportTargetWarning() {
+  const warning = $("export-target-warning");
+  warning.textContent = t("settings.requireOneTarget");
+  warning.classList.remove("hidden");
+
+  if (exportTargetWarningTimer !== null) {
+    window.clearTimeout(exportTargetWarningTimer);
+  }
+  exportTargetWarningTimer = window.setTimeout(() => {
+    warning.classList.add("hidden");
+    exportTargetWarningTimer = null;
+  }, 3000);
+}
+
+function setExportTarget(target: ExportTarget, enabled: boolean) {
+  if (!enabled) {
+    const otherTarget: ExportTarget = target === "altium" ? "kicad" : "altium";
+    if (!exportTargets[otherTarget]) {
+      showExportTargetWarning();
+      return;
+    }
+  }
+
+  exportTargets[target] = enabled;
+  saveExportTargets();
+  renderExportTargetUi();
 }
 
 function switchPage(pageName: string) {
@@ -630,18 +883,14 @@ function renderState(state: AppState) {
   $("btn-toggle-npnp-merge").classList.toggle("active", state.npnp_merge);
   $("btn-toggle-npnp-append").classList.toggle("active", state.npnp_append);
   $("btn-toggle-npnp-continue-on-error").classList.toggle("active", state.npnp_continue_on_error);
-  $("btn-toggle-npnp-lcsc-english").classList.toggle("active", state.npnp_lcsc_english);
   $("btn-toggle-npnp-force").classList.toggle("active", state.npnp_force);
+  renderSchematicMetadataSource(state.npnp_lcsc_english);
 
   const libraryInput = $("npnp-library-name-input") as HTMLInputElement;
   const libraryApply = $("btn-apply-npnp-library-name") as HTMLButtonElement;
+  $("npnp-library-name-section").classList.toggle("hidden", !state.npnp_merge);
   libraryInput.disabled = !state.npnp_merge;
   libraryApply.disabled = !state.npnp_merge;
-
-  const parallelInput = $("npnp-parallel-input") as HTMLInputElement;
-  const parallelApply = $("btn-apply-npnp-parallel") as HTMLButtonElement;
-  parallelInput.disabled = false;
-  parallelApply.disabled = false;
 
   const forceToggle = $("btn-toggle-npnp-force") as HTMLButtonElement;
   forceToggle.disabled = false;
@@ -970,15 +1219,35 @@ async function syncNpnpExportInputs() {
   await invoke("set_npnp_parallel", { parallel });
 }
 
+async function confirmNpnpFreshMergeOverwrite(): Promise<boolean> {
+  let conflicts: string[];
+  try {
+    conflicts = await invoke<string[]>("npnp_fresh_merge_conflicts");
+  } catch (error) {
+    console.warn("npnp_fresh_merge_conflicts failed", error);
+    setExportNotice("npnp", t("export.restartRequired"), "error");
+    return false;
+  }
+
+  if (conflicts.length === 0) {
+    return true;
+  }
+
+  return showMergeOverwriteModal(conflicts);
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   $("about-version").textContent = `v${__APP_VERSION__}`;
   $("update-current-version").textContent = `v${__APP_VERSION__}`;
+  loadExportTargets();
+  installTooltips();
   renderUpdateUi();
 
   const savedLang = localStorage.getItem("seex-lang") as Lang | null;
   if (savedLang === "zh" || savedLang === "en") {
     applyLanguage(savedLang);
   }
+  renderExportTargetUi();
 
   await refreshState();
   await listen("clipboard-changed", () => {
@@ -1035,6 +1304,28 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("btn-lang-zh").addEventListener("click", () => {
     applyLanguage("zh");
     void refreshState();
+  });
+
+  $("btn-target-altium").addEventListener("click", () => {
+    setExportTarget("altium", !exportTargets.altium);
+  });
+
+  $("btn-target-kicad").addEventListener("click", () => {
+    setExportTarget("kicad", !exportTargets.kicad);
+  });
+
+  $("btn-schematic-source-lcsc").addEventListener("click", async () => {
+    await queueExportConfigWrite(async () => {
+      await invoke("set_npnp_lcsc_english", { lcscEnglish: true });
+      await refreshState();
+    });
+  });
+
+  $("btn-schematic-source-szlcsc").addEventListener("click", async () => {
+    await queueExportConfigWrite(async () => {
+      await invoke("set_npnp_lcsc_english", { lcscEnglish: false });
+      await refreshState();
+    });
   });
 
   $("btn-match-quick").addEventListener("click", async () => {
@@ -1165,13 +1456,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
 
   $("btn-npnp-export").addEventListener("click", async () => {
-    startExportProgress("npnp", t("export.npnpRunning"));
-
     try {
       await queueExportConfigWrite(async () => {
         await syncNpnpExportInputs();
         await refreshState();
       });
+      const shouldContinue = await confirmNpnpFreshMergeOverwrite();
+      if (!shouldContinue) {
+        setExportNotice("npnp", t("export.cancelled"), "info");
+        return;
+      }
+
+      startExportProgress("npnp", t("export.npnpRunning"));
       const result = await invoke<string>("npnp_export");
       showExportStartResult("npnp", result);
       await refreshState();
@@ -1229,14 +1525,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const active = $("btn-toggle-npnp-continue-on-error").classList.contains("active");
     await queueExportConfigWrite(async () => {
       await invoke("set_npnp_continue_on_error", { continueOnError: !active });
-      await refreshState();
-    });
-  });
-
-  $("btn-toggle-npnp-lcsc-english").addEventListener("click", async () => {
-    const active = $("btn-toggle-npnp-lcsc-english").classList.contains("active");
-    await queueExportConfigWrite(async () => {
-      await invoke("set_npnp_lcsc_english", { lcscEnglish: !active });
       await refreshState();
     });
   });

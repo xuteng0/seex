@@ -4,11 +4,19 @@
 
 /* Embedded Chinese font for cross-platform consistency */
 @font-face {
-  font-family: "SourceHanSans";
+  font-family: "SourceHanSansSC-CJK";
   src: url("/fonts/SourceHanSansSC.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
+  unicode-range:
+    U+2E80-2EFF,
+    U+3000-303F,
+    U+31C0-31EF,
+    U+3400-4DBF,
+    U+4E00-9FFF,
+    U+F900-FAFF,
+    U+FF00-FFEF;
 }
 
 :root {
@@ -42,8 +50,8 @@
   --shadow:          0 2px 10px rgba(180,90,80,.07);
   --transition:      .22s cubic-bezier(.4,0,.2,1);
 
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, "SourceHanSans", sans-serif;
+  font-family: "SourceHanSansSC-CJK", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: var(--text);
@@ -988,15 +996,118 @@ button:disabled {
 label { font-size: 15px; flex-shrink: 0; color: var(--text-2); }
 
 /* ================================================================== */
-/*  LANGUAGE PAGE                                                      */
+/*  MODAL                                                              */
 /* ================================================================== */
 
-.lang-options {
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   display: flex;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(44, 24, 16, .22);
 }
 
-.lang-btn {
+.modal-panel {
+  width: min(560px, 100%);
+  max-height: min(620px, calc(100vh - 48px));
+  overflow: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgba(80, 36, 28, .18);
+  padding: 22px;
+}
+
+.modal-kicker {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+
+.modal-panel h3 {
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.modal-panel p {
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.modal-file-list {
+  margin: 14px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.modal-file-item {
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-family: "Consolas", "SFMono-Regular", monospace;
+  font-size: 12px;
+  user-select: text;
+  word-break: break-all;
+}
+
+.modal-hint {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-lighter);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* ================================================================== */
+/*  TOOLTIP                                                            */
+/* ================================================================== */
+
+.app-tooltip {
+  position: fixed;
+  z-index: 1200;
+  max-width: min(360px, calc(100vw - 28px));
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--text);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(44, 24, 16, .18);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  pointer-events: none;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* ================================================================== */
+/*  SETTINGS PAGE                                                      */
+/* ================================================================== */
+
+.settings-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.settings-btn {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1009,12 +1120,12 @@ label { font-size: 15px; flex-shrink: 0; color: var(--text-2); }
   min-width: 160px;
 }
 
-.lang-btn:hover {
+.settings-btn:hover {
   border-color: var(--primary-light);
   background: var(--primary-lighter);
 }
 
-.lang-btn.active {
+.settings-btn.active {
   border-color: var(--primary);
   background: var(--primary-lighter);
 }
@@ -1039,8 +1150,27 @@ label { font-size: 15px; flex-shrink: 0; color: var(--text-2); }
   color: var(--text);
 }
 
+.tool-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.tool-logo img {
+  max-width: 32px;
+  max-height: 32px;
+  display: block;
+}
+
 /* Chinese font mode */
 html.lang-zh {
-  font-family: "SourceHanSans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  font-family: "SourceHanSansSC-CJK", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
                "Helvetica Neue", Arial, sans-serif;
 }

@@ -48,6 +48,58 @@ Just install it from github release, or you can build it on your own for your ow
   <img src="public/imgs/lcsc.png" alt="SeEx npnp export page" width="340" />
 </p>
 
+## Build from source
+
+### Requirements
+
+- [Node.js](https://nodejs.org/) and npm
+- [Rust](https://www.rust-lang.org/tools/install)
+- The system dependencies required by [Tauri v2](https://v2.tauri.app/start/prerequisites/) for your platform
+- On Windows, WiX and NSIS are required when creating installer bundles
+
+### Install dependencies
+
+```powershell
+npm ci
+```
+
+### Build the frontend only
+
+```powershell
+npm run build
+```
+
+The frontend output is written to `dist/`.
+
+### Build the desktop app and installers
+
+For a normal release build with signed updater artifacts, set the updater signing environment variables first:
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = "<private-key>"
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "<private-key-password>"
+npm run tauri build
+```
+
+The release outputs are written under `src-tauri/target/release/`, with installers under `src-tauri/target/release/bundle/`.
+
+For a local build without updater signing keys, disable updater artifact generation with a temporary config override:
+
+```powershell
+@'
+{
+  "bundle": {
+    "createUpdaterArtifacts": false
+  }
+}
+'@ | Set-Content src-tauri/local-build.tauri.conf.json
+
+npm.cmd run tauri build -- --config src-tauri/local-build.tauri.conf.json
+Remove-Item src-tauri/local-build.tauri.conf.json
+```
+
+Use `npm.cmd` on Windows if PowerShell blocks the `npm.ps1` wrapper because script execution is disabled.
+
 ## Note
 
 `nlbn` is for `Windows`, `Macos`, `Linux`, becuase `Kicad` is built for such case. `npnp` is `Windows` only since `Altitum designer` is windows only.
