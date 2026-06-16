@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 const CONFIG_FILENAME: &str = "export_config.json";
 const LEGACY_NLBN_CONFIG_FILENAME: &str = "nlbn_config.txt";
+const APP_CONFIG_DIR: &str = "seex";
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -93,6 +94,12 @@ impl Default for NpnpConfig {
 
 impl AppConfig {
     fn config_path() -> PathBuf {
+        user_config_dir()
+            .map(|dir| dir.join(CONFIG_FILENAME))
+            .unwrap_or_else(Self::legacy_config_path)
+    }
+
+    fn legacy_config_path() -> PathBuf {
         std::env::current_exe()
             .ok()
             .and_then(|p| p.parent().map(|d| d.join(CONFIG_FILENAME)))
@@ -110,21 +117,59 @@ impl AppConfig {
         let path = Self::config_path();
         match fs::read_to_string(&path) {
             Ok(content) => serde_json::from_str(&content).unwrap_or_else(|_| Self::with_legacy()),
-            Err(_) => Self::with_legacy(),
+            Err(_) => Self::load_legacy_config().unwrap_or_else(Self::with_legacy),
         }
     }
 
     pub fn save(&self) {
         let path = Self::config_path();
+        if let Some(parent) = path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
         if let Ok(content) = serde_json::to_string_pretty(self) {
             let _ = fs::write(path, content);
         }
+    }
+
+    fn load_legacy_config() -> Option<Self> {
+        let path = Self::legacy_config_path();
+        let content = fs::read_to_string(path).ok()?;
+        let config = serde_json::from_str(&content).ok()?;
+        Some(config)
     }
 
     fn with_legacy() -> Self {
         let mut cfg = Self::default();
         cfg.nlbn = NlbnConfig::load_legacy();
         cfg
+    }
+}
+
+fn user_config_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        std::env::var_os("APPDATA")
+            .map(PathBuf::from)
+            .map(|path| path.join(APP_CONFIG_DIR))
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::env::var_os("HOME")
+            .map(PathBuf::from)
+            .map(|path| path.join("Library").join("Application Support").join(APP_CONFIG_DIR))
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        std::env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .or_else(|| {
+                std::env::var_os("HOME")
+                    .map(PathBuf::from)
+                    .map(|path| path.join(".config"))
+            })
+            .map(|path| path.join(APP_CONFIG_DIR))
     }
 }
 
