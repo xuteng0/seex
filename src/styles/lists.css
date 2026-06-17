@@ -1,0 +1,73 @@
+﻿/*  SCROLL AREAS                                                       */
+/* ================================================================== */
+
+.scroll-area {
+  max-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.scroll-area-full { max-height: none; flex: 1; }
+
+.scroll-area::-webkit-scrollbar { width: 4px; }
+.scroll-area::-webkit-scrollbar-track { background: transparent; }
+.scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ================================================================== */
+/*  LIST ITEMS                                                         */
+/* ================================================================== */
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background .12s;
+}
+.item-row:hover { background: var(--primary-lighter); }
+
+.item-time {
+  color: var(--text-3);
+  font-size: 13px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-value {
+  color: var(--primary);
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.item-row:hover .item-actions { opacity: 1; }
+
+.item-actions button {
+  padding: 3px 8px;
+  font-size: 13px;
+  background: transparent;
+  color: var(--text-3);
+  border-radius: 4px;
+}
+.item-actions button:hover { background: var(--primary-light); color: var(--primary); }
+
+.history-item {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  margin-bottom: 5px;
+}
+.history-item .item-row { padding: 0; }
+.history-item .item-value { font-weight: 500; color: var(--text); }
+
+/* ================================================================== */

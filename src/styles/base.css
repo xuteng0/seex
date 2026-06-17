@@ -1,0 +1,68 @@
+﻿/* SeEx éˆ¥?Sidebar Layout + Peach Blossom Theme */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Embedded Chinese font for cross-platform consistency */
+@font-face {
+  font-family: "SourceHanSansSC-CJK";
+  src: url("/fonts/SourceHanSansSC.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+2E80-2EFF,
+    U+3000-303F,
+    U+31C0-31EF,
+    U+3400-4DBF,
+    U+4E00-9FFF,
+    U+F900-FAFF,
+    U+FF00-FFEF;
+}
+
+:root {
+  --bg:              #F3F0EB;
+  --surface:         #FFFFFF;
+  --surface-hover:   #FFF8F4;
+
+  --primary:         #E8656C;
+  --primary-hover:   #D9525A;
+  --primary-light:   #FFE0DF;
+  --primary-lighter: #FFF0EF;
+
+  --accent:          #F4845F;
+  --accent-light:    #FFECD2;
+
+  --text:            #2C1810;
+  --text-2:          #7D6560;
+  --text-3:          #B5A09A;
+
+  --border:          #F2DDD6;
+  --success:         #66BB6A;
+  --danger:          #DC4154;
+  --danger-light:    #FFF0F1;
+
+  --sidebar-w:       210px;
+  --sidebar-w-min:   58px;
+  --radius:          10px;
+  --radius-sm:       6px;
+  --radius-pill:     50px;
+  --shadow-sm:       0 1px 3px rgba(180,90,80,.05);
+  --shadow:          0 2px 10px rgba(180,90,80,.07);
+  --transition:      .22s cubic-bezier(.4,0,.2,1);
+
+  font-family: "SourceHanSansSC-CJK", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+

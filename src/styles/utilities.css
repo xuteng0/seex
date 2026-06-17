@@ -1,0 +1,10 @@
+﻿/*  UTILITY                                                            */
+/* ================================================================== */
+
+.hidden { display: none !important; }
+.danger-text { color: var(--danger); font-weight: 600; font-size: 15px; }
+.hint { font-size: 14px; color: var(--text-3); }
+.empty-state { font-size: 15px; color: var(--text-3); padding: 14px 0; text-align: center; font-style: italic; }
+label { font-size: 15px; flex-shrink: 0; color: var(--text-2); }
+
+/* ================================================================== */

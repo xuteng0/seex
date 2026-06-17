@@ -1,0 +1,37 @@
+﻿/*  STATUS BAR                                                         */
+/* ================================================================== */
+
+#status-bar {
+  background: var(--surface);
+  padding: 5px 18px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.status-dot {
+  margin-left: auto;
+  color: var(--success);
+  font-weight: 600;
+}
+.status-dot::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  margin-right: 6px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+
+/* ================================================================== */
