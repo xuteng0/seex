@@ -127,6 +127,14 @@ export function bindNpnpControls({ refreshState, errorMessage }: BindNpnpControl
     });
   });
 
+  $("btn-toggle-npnp-use-template").addEventListener("click", async () => {
+    const active = $("btn-toggle-npnp-use-template").classList.contains("active");
+    await queueExportConfigWrite(async () => {
+      await invoke("set_npnp_use_template", { useTemplate: !active });
+      await refreshState();
+    });
+  });
+
   $("btn-toggle-npnp-force").addEventListener("click", async () => {
     const active = $("btn-toggle-npnp-force").classList.contains("active");
     await queueExportConfigWrite(async () => {

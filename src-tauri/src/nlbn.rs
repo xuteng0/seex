@@ -1,5 +1,4 @@
-use nlbn::checkpoint::{append_checkpoint, load_checkpoint};
-use nlbn::model_converter::ModelStageStatus;
+use nlbn::checkpoint::{CheckpointManager, CompletedAssets};
 use nlbn::{Cli, EasyedaApi, LibraryManager};
 use serde::Serialize;
 use std::path::PathBuf;
@@ -106,18 +105,25 @@ fn emit_progress(
 
 async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<String, String> {
     let args = Arc::new(build_cli(req));
-    let lib_manager = Arc::new(LibraryManager::from_cli(&args).map_err(|e| e.to_string())?);
+    let lib_manager = Arc::new(LibraryManager::new(&args.output));
     lib_manager
         .create_directories()
         .map_err(|e| e.to_string())?;
 
-    let checkpoint_path = args.output.join(".checkpoint");
-    let completed_ids = load_checkpoint(&checkpoint_path);
+    let checkpoint = Arc::new(
+        CheckpointManager::load(args.output.join(".checkpoint")).map_err(|e| e.to_string())?,
+    );
+    let completed_ids = checkpoint.completed_assets();
     let total_requested = req.ids.len();
+    let requested_assets = requested_assets(req);
     let pending_ids: Vec<String> = req
         .ids
         .iter()
-        .filter(|id| !completed_ids.contains(id.as_str()))
+        .filter(|id| {
+            !completed_ids
+                .get(id.as_str())
+                .is_some_and(|assets| assets.covers(requested_assets))
+        })
         .cloned()
         .collect();
     let skipped_by_checkpoint = total_requested.saturating_sub(pending_ids.len());
@@ -143,7 +149,6 @@ async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<Strin
     );
 
     let api = Arc::new(EasyedaApi::new());
-    let model_stage_status = Arc::new(ModelStageStatus::new());
     let success_count = Arc::new(AtomicUsize::new(0));
     let failed_count = Arc::new(AtomicUsize::new(0));
     let processed_count = Arc::new(AtomicUsize::new(0));
@@ -158,14 +163,18 @@ async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<Strin
             let args = args.clone();
             let api = api.clone();
             let lib_manager = lib_manager.clone();
-            let model_stage_status = model_stage_status.clone();
+            let checkpoint = checkpoint.clone();
 
             join_set.spawn(async move {
                 let _permit = semaphore.acquire_owned().await.map_err(|e| e.to_string())?;
-                let result =
-                    process_component(&args, &api, &lib_manager, model_stage_status.as_ref(), &id)
-                        .await
-                        .map_err(|e| e.to_string());
+                let result = process_component(&args, &api, &lib_manager, &id)
+                    .await
+                    .map_err(|e| e.to_string());
+                if result.is_ok() {
+                    checkpoint
+                        .record_completed_ids(&[id.clone()], requested_assets)
+                        .map_err(|e| e.to_string())?;
+                }
                 Ok::<ItemOutcome, String>(ItemOutcome { id, result })
             });
         }
@@ -197,16 +206,16 @@ async fn run_export(req: &ExportRequest, app_handle: &AppHandle) -> Result<Strin
         for id in pending_ids {
             let outcome = ItemOutcome {
                 id: id.clone(),
-                result: process_component(
-                    &args,
-                    &api,
-                    &lib_manager,
-                    model_stage_status.as_ref(),
-                    &id,
-                )
-                .await
-                .map_err(|e| e.to_string()),
+                result: process_component(&args, &api, &lib_manager, &id)
+                    .await
+                    .map_err(|e| e.to_string()),
             };
+
+            if outcome.result.is_ok() {
+                checkpoint
+                    .record_completed_ids(&[id.clone()], requested_assets)
+                    .map_err(|e| e.to_string())?;
+            }
 
             register_outcome(
                 app_handle,
@@ -275,6 +284,7 @@ fn register_outcome(
         Ok(()) => format!("Processed {} successfully", outcome.id),
         Err(error) => format!("Failed {}: {}", outcome.id, error),
     };
+
     emit_progress(app_handle, message, true, Some(current), Some(total));
 }
 
@@ -282,7 +292,6 @@ async fn process_component(
     args: &Cli,
     api: &EasyedaApi,
     lib_manager: &LibraryManager,
-    model_stage_status: &ModelStageStatus,
     lcsc_id: &str,
 ) -> nlbn::Result<()> {
     let component_data = api.get_component_data(lcsc_id).await?;
@@ -296,18 +305,9 @@ async fn process_component(
     }
 
     if args.model_3d || args.full {
-        nlbn::model_converter::convert_3d_model(
-            args,
-            api,
-            &component_data,
-            lib_manager,
-            lcsc_id,
-            model_stage_status,
-        )
-        .await?;
+        nlbn::model_converter::convert_3d_model(api, &component_data, lib_manager, lcsc_id)
+            .await?;
     }
-
-    append_checkpoint(&args.output.join(".checkpoint"), lcsc_id);
     Ok(())
 }
 
@@ -323,13 +323,12 @@ fn build_cli(req: &ExportRequest) -> Cli {
         model_3d: mode == "3d",
         full: mode == "full",
         output,
-        lib_name: effective_library_name(req),
-        symbol_lib: None,
-        footprint_lib: None,
-        model_lib: None,
-        prompt: false,
         overwrite: req.overwrite,
+        overwrite_symbol: req.overwrite,
+        overwrite_footprint: req.overwrite,
+        overwrite_model_3d: req.overwrite,
         project_relative: req.project_relative,
+        symbol_fill_color: None,
         debug: false,
         continue_on_error: req.continue_on_error,
         parallel: req.parallel.max(1),
@@ -360,6 +359,15 @@ fn effective_library_name(req: &ExportRequest) -> Option<String> {
         None
     } else {
         Some(trimmed.to_string())
+    }
+}
+
+fn requested_assets(req: &ExportRequest) -> CompletedAssets {
+    let mode = normalize_mode(&req.mode);
+    CompletedAssets {
+        symbol: mode == "symbol" || mode == "full",
+        footprint: mode == "footprint" || mode == "full",
+        model_3d: mode == "3d" || mode == "full",
     }
 }
 

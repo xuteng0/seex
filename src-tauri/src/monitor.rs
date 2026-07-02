@@ -47,6 +47,7 @@ pub struct MonitorState {
     pub npnp_parallel: usize,
     pub npnp_continue_on_error: bool,
     pub npnp_lcsc_english: bool,
+    pub npnp_use_template: bool,
     pub npnp_force: bool,
     pub history_save_path: String,
     pub matched_save_path: String,
@@ -83,6 +84,7 @@ impl MonitorState {
             npnp_parallel: 4,
             npnp_continue_on_error: true,
             npnp_lcsc_english: false,
+            npnp_use_template: true,
             npnp_force: false,
             history_save_path: default_save_path("history.txt"),
             matched_save_path: default_save_path("matched.txt"),
@@ -264,6 +266,10 @@ impl MonitorState {
 
     pub fn set_npnp_lcsc_english(&mut self, lcsc_english: bool) {
         self.npnp_lcsc_english = lcsc_english;
+    }
+
+    pub fn set_npnp_use_template(&mut self, use_template: bool) {
+        self.npnp_use_template = use_template;
     }
 
     pub fn set_npnp_force(&mut self, force: bool) {

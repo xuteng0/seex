@@ -25,6 +25,7 @@ export interface AppState {
   npnp_parallel: number;
   npnp_continue_on_error: boolean;
   npnp_lcsc_english: boolean;
+  npnp_use_template: boolean;
   npnp_force: boolean;
   monitoring: boolean;
   history_count: number;

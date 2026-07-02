@@ -80,6 +80,7 @@ export function renderState(
   $("btn-toggle-npnp-merge").classList.toggle("active", state.npnp_merge);
   $("btn-toggle-npnp-append").classList.toggle("active", state.npnp_append);
   $("btn-toggle-npnp-continue-on-error").classList.toggle("active", state.npnp_continue_on_error);
+  $("btn-toggle-npnp-use-template").classList.toggle("active", state.npnp_use_template);
   $("btn-toggle-npnp-force").classList.toggle("active", state.npnp_force);
   renderSchematicMetadataSource(state.npnp_lcsc_english);
 

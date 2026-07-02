@@ -1,11 +1,8 @@
 use ::npnp::LcedaClient;
-use ::npnp::batch::{BatchOptions, BatchSummary, export_batch};
+use ::npnp::batch::{BatchOptions, BatchSummary, export_batch_from_ids};
 use serde::Serialize;
-use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 
 use crate::monitor::MonitorState;
@@ -39,6 +36,7 @@ pub struct ExportRequest {
     pub parallel: usize,
     pub continue_on_error: bool,
     pub lcsc_english: bool,
+    pub use_template: bool,
     pub force: bool,
 }
 
@@ -87,9 +85,7 @@ pub fn spawn_export(state: Arc<Mutex<MonitorState>>, req: ExportRequest, app_han
     );
 
     tauri::async_runtime::spawn(async move {
-        let input_path = create_temp_input_path();
         let result: Result<String, String> = async {
-            write_ids_file(&input_path, &req.ids)?;
             let client = LcedaClient::new();
             emit_progress(
                 &app_handle,
@@ -98,14 +94,13 @@ pub fn spawn_export(state: Arc<Mutex<MonitorState>>, req: ExportRequest, app_han
                 None,
                 Some(req.ids.len()),
             );
-            let summary = export_batch(&client, build_batch_options(&req, &input_path))
+            let ids = req.ids.clone();
+            let summary = export_batch_from_ids(&client, ids, build_batch_options(&req))
                 .await
                 .map_err(|e| e.to_string())?;
             Ok(format_summary(&req, &summary))
         }
         .await;
-
-        let _ = fs::remove_file(&input_path);
 
         let (success, message) = match result {
             Ok(message) => (true, message),
@@ -160,33 +155,12 @@ fn running_message(req: &ExportRequest) -> String {
     }
 }
 
-fn create_temp_input_path() -> PathBuf {
-    let stamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_millis())
-        .unwrap_or(0);
-    std::env::temp_dir().join(format!(
-        "seex_npnp_ids_{}_{}.txt",
-        std::process::id(),
-        stamp
-    ))
-}
-
-fn write_ids_file(path: &PathBuf, ids: &[String]) -> Result<(), String> {
-    let mut file = fs::File::create(path).map_err(|e| e.to_string())?;
-    for id in ids {
-        writeln!(file, "{}", id).map_err(|e| e.to_string())?;
-    }
-    file.sync_all().map_err(|e| e.to_string())
-}
-
-fn build_batch_options(req: &ExportRequest, input_path: &PathBuf) -> BatchOptions {
+fn build_batch_options(req: &ExportRequest) -> BatchOptions {
     let mode = normalize_mode(&req.mode);
     // npnp's validator rejects --append without --merge. The UI also guards
     // this, but clamp on the backend too in case older configs slip through.
     let append = req.append && req.merge;
     BatchOptions {
-        input: input_path.clone(),
         output: PathBuf::from(normalize_output_path(&req.output_path)),
         schlib: mode == "schlib",
         pcblib: mode == "pcblib",
@@ -197,6 +171,7 @@ fn build_batch_options(req: &ExportRequest, input_path: &PathBuf) -> BatchOption
         parallel: req.parallel.max(1),
         continue_on_error: req.continue_on_error,
         lcsc_english: req.lcsc_english,
+        use_template: req.use_template,
         force: req.force,
     }
 }
@@ -271,9 +246,10 @@ fn format_summary(req: &ExportRequest, summary: &BatchSummary) -> String {
     ));
 
     lines.push(format!(
-        "Continue on error: {} | LCSC English: {} | Force: {}",
+        "Continue on error: {} | LCSC English: {} | Use template: {} | Force: {}",
         yes_no(req.continue_on_error),
         yes_no(req.lcsc_english),
+        yes_no(req.use_template),
         yes_no(req.force),
     ));
 

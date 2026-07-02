@@ -73,6 +73,7 @@ pub struct NpnpConfig {
     pub parallel: usize,
     pub continue_on_error: bool,
     pub lcsc_english: bool,
+    pub use_template: bool,
     pub force: bool,
 }
 
@@ -87,6 +88,7 @@ impl Default for NpnpConfig {
             parallel: 4,
             continue_on_error: true,
             lcsc_english: false,
+            use_template: true,
             force: false,
         }
     }
